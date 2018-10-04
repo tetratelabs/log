@@ -1,0 +1,30 @@
+version: 2
+workflows:
+  version: 2
+  build:
+    jobs:
+      - clone
+      - build:
+          requires:
+            - clone
+jobs:
+  clone:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/tetratelabs/log
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: /go/src/github.com/tetratelabs/log
+          paths:
+            - .
+  build:
+    docker:
+      - image: circleci/golang:1.10
+    working_directory: /go/src/github.com/tetratelabs/log
+    steps:
+      - attach_workspace:
+          at: /go/src/github.com/tetratelabs/log
+      - run: make
+      - run: make test
+      - run: make lint
