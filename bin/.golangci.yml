@@ -1,0 +1,23 @@
+linters:
+  enable:
+    - deadcode
+    - errcheck
+    - goconst
+    - golint
+    - ineffassign
+    - interfacer
+    - lll
+    - maligned
+    - megacheck
+    - misspell
+    - structcheck
+    - unconvert
+    - varcheck
+    - govet
+    - goimports
+    - prealloc
+linters-settings:
+  lll:
+    line-length: 160
+  goconst:
+    min-occurrences: 4

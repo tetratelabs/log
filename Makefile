@@ -14,8 +14,12 @@ test:
 	@echo "--- test ---"
 	@go test $(TESTS)
 
-lint: $(GOLINT)
+LINTER := bin/golangci-lint
+$(LINTER):
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.10.2
+
+lint: $(LINTER) ./bin/.golangci.yml
 	@echo "--- lint ---"
-	@bin/gometalinter.sh
+	@$(LINTER) run --config ./bin/.golangci.yml
 
 .PHONY: all build test lint vendor
