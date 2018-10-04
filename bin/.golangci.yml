@@ -21,3 +21,8 @@ linters-settings:
     line-length: 160
   goconst:
     min-occurrences: 4
+# TODO(https://github.com/golangci/golangci-lint/issues/237): remove this
+# This skips files vendored by go1.11 modules, which can break some of the linters
+run:
+  skip-files:
+    - ".*/pkg/mod/.*$"
