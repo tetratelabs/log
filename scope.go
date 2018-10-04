@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package log
+package log // nolint: golint
 
 import (
 	"fmt"
@@ -256,7 +256,7 @@ func (s *Scope) emit(level zapcore.Level, dumpStack bool, msg string, fields []z
 	if w := writeFn.Load().(func(zapcore.Entry, []zapcore.Field) error); w != nil {
 		if err := w(e, fields); err != nil {
 			if es := errorSink.Load().(zapcore.WriteSyncer); es != nil {
-				fmt.Fprintf(es, "%v log write error: %v\n", time.Now(), err)
+				_, _ = fmt.Fprintf(es, "%v log write error: %v\n", time.Now(), err)
 				_ = es.Sync()
 			}
 		}

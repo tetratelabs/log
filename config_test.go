@@ -165,7 +165,9 @@ func TestRotateNoStdout(t *testing.T) {
 	// Ensure that rotation is setup properly
 
 	dir, _ := ioutil.TempDir("", "TestRotateNoStdout")
-	defer os.RemoveAll(dir)
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	file := dir + "/rot.log"
 
@@ -192,7 +194,9 @@ func TestRotateNoStdout(t *testing.T) {
 
 func TestRotateAndStdout(t *testing.T) {
 	dir, _ := ioutil.TempDir("", "TestRotateAndStdout")
-	defer os.RemoveAll(dir)
+	defer func() {
+		_ = os.RemoveAll(dir)
+	}()
 
 	file := dir + "/rot.log"
 

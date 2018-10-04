@@ -288,7 +288,8 @@ func Configure(options *Options) error {
 
 	// capture gRPC logging
 	if options.LogGrpc {
-		grpclog.SetLogger(zapgrpc.NewLogger(captureLogger.WithOptions(zap.AddCallerSkip(2))))
+		// TODO(https://github.com/uber-go/zap/issues/534): remove the nolint directive
+		grpclog.SetLogger(zapgrpc.NewLogger(captureLogger.WithOptions(zap.AddCallerSkip(2)))) //nolint: megacheck
 	}
 
 	return nil
