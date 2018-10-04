@@ -41,7 +41,7 @@ sent to the global zap logger (`zap.L()`).
 
 ## Installing
 
-The log package can be installed uwing `go get`:
+The log package can be installed using `go get`:
 
     go get -u github.com/tetratelabs/log
 
