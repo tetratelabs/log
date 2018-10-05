@@ -8,7 +8,6 @@ linters:
     - interfacer
     - lll
     - maligned
-    - megacheck
     - misspell
     - structcheck
     - unconvert
@@ -16,6 +15,9 @@ linters:
     - govet
     - goimports
     - prealloc
+    - unused
+    - staticcheck
+    - gosimple
 linters-settings:
   lll:
     line-length: 160
