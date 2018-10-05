@@ -18,6 +18,8 @@ linters:
     - unused
     - staticcheck
     - gosimple
+  disable:
+    - megacheck
 linters-settings:
   lll:
     line-length: 160
