@@ -8,8 +8,6 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.11
-    env:
-      GO111MODULE: on
     working_directory: ~/log
     steps:
       - checkout
