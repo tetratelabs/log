@@ -1,32 +1,26 @@
-# Location of the 'dep' binary, to install it if missing
-DEP := $(shell which dep)
-
 # Packages to build
 PKGS := $(shell go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' ./...)
 # Tests to run
 TESTS := $(shell go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 
+# Enable go modules when building, even if the repo is copied into a GOPATH.
+export GO111MODULE=on
 
-all: build
-
-build: vendor
+build:
 	@echo "--- build ---"
-	@go build -v -i $(PKGS)
+	@go build -v $(PKGS)
 	@go vet $(PKGS)
 
 test:
 	@echo "--- test ---"
 	@go test $(TESTS)
 
-lint: $(GOLINT)
+LINTER := bin/golangci-lint
+$(LINTER):
+	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.11.2
+
+lint: $(LINTER) ./bin/.golangci.yml
 	@echo "--- lint ---"
-	@bin/gometalinter.sh
+	@$(LINTER) run --config ./bin/.golangci.yml
 
-$(DEP):
-	@go get -v github.com/golang/dep/cmd/dep
-
-vendor: $(DEP)
-	@echo "--- update dependencies ---"
-	@dep ensure -v
-
-.PHONY: all build test lint vendor
+.PHONY: build test lint
