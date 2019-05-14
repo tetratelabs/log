@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 const (
@@ -310,22 +311,29 @@ func convertScopedLevel(sl string) (string, Level, error) {
 // the necessary set of flags to expose a CLI to let the user control all
 // logging options.
 func (o *Options) AttachFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringArrayVar(&o.OutputPaths, "log-target", o.OutputPaths,
+	_ = o.AttachToFlagSet(cmd.PersistentFlags())
+}
+
+// AttachToFlagSet attaches a set of pflags to the provided FlagSet and returns the FlagSet.
+//
+// FlagSet should be provided explicitly, failure to do so will result in a panic.
+func (o *Options) AttachToFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
+	fs.StringArrayVar(&o.OutputPaths, "log-target", o.OutputPaths,
 		"The set of paths where to output the log. This can be any path as well as the special values stdout and stderr")
 
-	cmd.PersistentFlags().StringVar(&o.RotateOutputPath, "log-rotate", o.RotateOutputPath,
+	fs.StringVar(&o.RotateOutputPath, "log-rotate", o.RotateOutputPath,
 		"The path for the optional rotating log file")
 
-	cmd.PersistentFlags().IntVar(&o.RotationMaxAge, "log-rotate-max-age", o.RotationMaxAge,
+	fs.IntVar(&o.RotationMaxAge, "log-rotate-max-age", o.RotationMaxAge,
 		"The maximum age in days of a log file beyond which the file is rotated (0 indicates no limit)")
 
-	cmd.PersistentFlags().IntVar(&o.RotationMaxSize, "log-rotate-max-size", o.RotationMaxSize,
+	fs.IntVar(&o.RotationMaxSize, "log-rotate-max-size", o.RotationMaxSize,
 		"The maximum size in megabytes of a log file beyond which the file is rotated")
 
-	cmd.PersistentFlags().IntVar(&o.RotationMaxBackups, "log-rotate-max-backups", o.RotationMaxBackups,
+	fs.IntVar(&o.RotationMaxBackups, "log-rotate-max-backups", o.RotationMaxBackups,
 		"The maximum number of log file backups to keep before older files are deleted (0 indicates no limit)")
 
-	cmd.PersistentFlags().BoolVar(&o.JSONEncoding, "log-as-json", o.JSONEncoding,
+	fs.BoolVar(&o.JSONEncoding, "log-as-json", o.JSONEncoding,
 		"Whether to format output as JSON or in plain console-friendly format")
 
 	allScopes := Scopes()
@@ -337,7 +345,7 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 		sort.Strings(keys)
 		s := strings.Join(keys, ", ")
 
-		cmd.PersistentFlags().StringVar(&o.outputLevels, "log-output-level", o.outputLevels,
+		fs.StringVar(&o.outputLevels, "log-output-level", o.outputLevels,
 			fmt.Sprintf("Comma-separated minimum per-scope logging level of messages to output, in the form of "+
 				"<scope>:<level>,<scope>:<level>,... where scope can be one of [%s] and level can be one of [%s, %s, %s, %s, %s]",
 				s,
@@ -347,7 +355,7 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 				levelToString[ErrorLevel],
 				levelToString[NoneLevel]))
 
-		cmd.PersistentFlags().StringVar(&o.stackTraceLevels, "log-stacktrace-level", o.stackTraceLevels,
+		fs.StringVar(&o.stackTraceLevels, "log-stacktrace-level", o.stackTraceLevels,
 			fmt.Sprintf("Comma-separated minimum per-scope logging level at which stack traces are captured, in the form of "+
 				"<scope>:<level>,<scope:level>,... where scope can be one of [%s] and level can be one of [%s, %s, %s, %s, %s]",
 				s,
@@ -357,10 +365,10 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 				levelToString[ErrorLevel],
 				levelToString[NoneLevel]))
 
-		cmd.PersistentFlags().StringVar(&o.logCallers, "log-caller", o.logCallers,
+		fs.StringVar(&o.logCallers, "log-caller", o.logCallers,
 			fmt.Sprintf("Comma-separated list of scopes for which to include caller information, scopes can be any of [%s]", s))
 	} else {
-		cmd.PersistentFlags().StringVar(&o.outputLevels, "log-output-level", o.outputLevels,
+		fs.StringVar(&o.outputLevels, "log-output-level", o.outputLevels,
 			fmt.Sprintf("The minimum logging level of messages to output,  can be one of [%s, %s, %s, %s, %s]",
 				levelToString[DebugLevel],
 				levelToString[InfoLevel],
@@ -368,7 +376,7 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 				levelToString[ErrorLevel],
 				levelToString[NoneLevel]))
 
-		cmd.PersistentFlags().StringVar(&o.stackTraceLevels, "log-stacktrace-level", o.stackTraceLevels,
+		fs.StringVar(&o.stackTraceLevels, "log-stacktrace-level", o.stackTraceLevels,
 			fmt.Sprintf("The minimum logging level at which stack traces are captured, can be one of [%s, %s, %s, %s, %s]",
 				levelToString[DebugLevel],
 				levelToString[InfoLevel],
@@ -376,7 +384,9 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 				levelToString[ErrorLevel],
 				levelToString[NoneLevel]))
 
-		cmd.PersistentFlags().StringVar(&o.logCallers, "log-caller", o.logCallers,
+		fs.StringVar(&o.logCallers, "log-caller", o.logCallers,
 			"Comma-separated list of scopes for which to include called information, scopes can be any of [default]")
 	}
+
+	return fs
 }
