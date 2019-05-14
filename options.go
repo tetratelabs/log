@@ -316,11 +316,8 @@ func (o *Options) AttachFlags(cmd *cobra.Command) {
 
 // AttachToFlagSet attaches a set of pflags to the provided FlagSet and returns the FlagSet.
 //
-// If FlagSet is not provided, a new one will be created and returned.
+// FlagSet should be provided explicitly, failure to do so will result in a panic.
 func (o *Options) AttachToFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
-	if fs == nil {
-		fs = pflag.NewFlagSet("Log Options", pflag.ExitOnError)
-	}
 	fs.StringArrayVar(&o.OutputPaths, "log-target", o.OutputPaths,
 		"The set of paths where to output the log. This can be any path as well as the special values stdout and stderr")
 
