@@ -55,6 +55,7 @@ package log
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -307,4 +308,25 @@ func Sync() error {
 	}
 
 	return err
+}
+
+// PrintRegisteredScopes logs all the registered scopes and their configured output level using` the default logger
+func PrintRegisteredScopes() {
+	s := Scopes()
+	pad := 0
+
+	names := make([]string, 0, len(s))
+	for n := range s {
+		names = append(names, n)
+		if len(n) > pad {
+			pad = len(n)
+		}
+	}
+	sort.Strings(names)
+
+	Info("registered logging scopes:")
+	for _, n := range names {
+		sc := s[n]
+		Infof("- %-*s %-5s %s", pad, sc.Name(), levelToString[sc.GetOutputLevel()], sc.Description())
+	}
 }
