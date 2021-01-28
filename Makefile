@@ -1,26 +1,21 @@
 # Packages to build
-PKGS := $(shell go list -f '{{if .GoFiles}}{{.ImportPath}}{{end}}' ./...)
-# Tests to run
-TESTS := $(shell go list -f '{{if .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
-
-# Enable go modules when building, even if the repo is copied into a GOPATH.
-export GO111MODULE=on
+PKGS := ./...
+TEST_OPTS ?=
 
 build:
 	@echo "--- build ---"
-	@go build -v $(PKGS)
-	@go vet $(PKGS)
+	go build -v $(PKGS)
 
 test:
 	@echo "--- test ---"
-	@go test $(TESTS)
+	go test $(TEST_OPTS) $(PKGS)
 
 LINTER := bin/golangci-lint
 $(LINTER):
-	@curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s v1.11.2
+	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b bin v1.23.6
 
-lint: $(LINTER) ./bin/.golangci.yml
+lint: $(LINTER) golangci.yml
 	@echo "--- lint ---"
-	@$(LINTER) run --config ./bin/.golangci.yml
+	$(LINTER) run --config golangci.yml
 
 .PHONY: build test lint

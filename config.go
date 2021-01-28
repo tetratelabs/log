@@ -205,33 +205,13 @@ func updateScopes(options *Options, core zapcore.Core, errSink zapcore.WriteSync
 	allScopes := Scopes()
 
 	// update the output levels of all scopes
-	levels := strings.Split(options.outputLevels, ",")
-	for _, sl := range levels {
-		s, l, err := convertScopedLevel(sl)
-		if err != nil {
-			return err
-		}
-
-		if scope, ok := allScopes[s]; ok {
-			scope.SetOutputLevel(l)
-		} else {
-			return fmt.Errorf("unknown scope '%s' specified", s)
-		}
+	if err := processLevels(allScopes, options.outputLevels, func(s *Scope, l Level) { s.SetOutputLevel(l) }); err != nil {
+		return err
 	}
 
 	// update the stack tracing levels of all scopes
-	levels = strings.Split(options.stackTraceLevels, ",")
-	for _, sl := range levels {
-		s, l, err := convertScopedLevel(sl)
-		if err != nil {
-			return err
-		}
-
-		if scope, ok := allScopes[s]; ok {
-			scope.SetStackTraceLevel(l)
-		} else {
-			return fmt.Errorf("unknown scope '%s' specified", s)
-		}
+	if err := processLevels(allScopes, options.stackTraceLevels, func(s *Scope, l Level) { s.SetStackTraceLevel(l) }); err != nil {
+		return err
 	}
 
 	// update the caller location setting of all scopes
@@ -241,8 +221,43 @@ func updateScopes(options *Options, core zapcore.Core, errSink zapcore.WriteSync
 			continue
 		}
 
+		if s == OverrideScopeName {
+			// ignore everything else and just apply the override value
+			for _, scope := range allScopes {
+				scope.SetLogCallers(true)
+			}
+
+			return nil
+		}
+
 		if scope, ok := allScopes[s]; ok {
 			scope.SetLogCallers(true)
+		} else {
+			return fmt.Errorf("unknown scope '%s' specified", s)
+		}
+	}
+
+	return nil
+}
+
+// processLevels breaks down an argument string into a set of scope & levels and then
+// tries to apply the result to the scopes. It supports the use of a global override.
+func processLevels(allScopes map[string]*Scope, arg string, setter func(*Scope, Level)) error {
+	levels := strings.Split(arg, ",")
+	for _, sl := range levels {
+		s, l, err := convertScopedLevel(sl)
+		if err != nil {
+			return err
+		}
+
+		if scope, ok := allScopes[s]; ok {
+			setter(scope, l)
+		} else if s == OverrideScopeName {
+			// override replaces everything
+			for _, scope := range allScopes {
+				setter(scope, l)
+			}
+			return nil
 		} else {
 			return fmt.Errorf("unknown scope '%s' specified", s)
 		}

@@ -22,7 +22,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var defaultScope = RegisterScope(DefaultScopeName, "Unscoped logging messages.", 0)
+func registerDefaultScope() *Scope {
+	return RegisterScope(DefaultScopeName, "Unscoped logging messages.", 1)
+}
+
+var defaultScope = registerDefaultScope()
 
 // Error outputs a message at error level.
 func Error(msg string, fields ...zapcore.Field) {
