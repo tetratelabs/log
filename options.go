@@ -28,6 +28,7 @@ import (
 const (
 	// DefaultScopeName defines the name of the default scope.
 	DefaultScopeName          = "default"
+	OverrideScopeName         = "all"
 	defaultOutputLevel        = InfoLevel
 	defaultStackTraceLevel    = NoneLevel
 	defaultOutputPath         = "stdout"
@@ -342,6 +343,7 @@ func (o *Options) AttachToFlagSet(fs *pflag.FlagSet) *pflag.FlagSet {
 		for name := range allScopes {
 			keys = append(keys, name)
 		}
+		keys = append(keys, OverrideScopeName)
 		sort.Strings(keys)
 		s := strings.Join(keys, ", ")
 

@@ -93,6 +93,8 @@ func TestTimestampProperMicros(t *testing.T) {
 }
 
 func TestOddballs(t *testing.T) {
+	resetGlobals()
+
 	o := DefaultOptions()
 	_ = Configure(o)
 
@@ -315,6 +317,47 @@ func TestCapture(t *testing.T) {
 	t.Error("Could not find stack trace info in output")
 }
 
+func TestOverrides(t *testing.T) {
+	resetGlobals()
+	s := RegisterScope("TestOverrides", "For testing", 0)
+
+	o := DefaultOptions()
+	o.outputLevels = "default:debug,all:info"
+	if err := Configure(o); err != nil {
+		t.Errorf("Expecting success, got %v", err)
+	}
+	if s.GetOutputLevel() != InfoLevel {
+		t.Errorf("Expecting InfoLevel, got %v", s.GetOutputLevel())
+	}
+	if defaultScope.GetOutputLevel() != InfoLevel {
+		t.Errorf("Expecting InfoLevel, got %v", defaultScope.GetOutputLevel())
+	}
+
+	o = DefaultOptions()
+	o.stackTraceLevels = "default:debug,all:info"
+	if err := Configure(o); err != nil {
+		t.Errorf("Expecting success, got %v", err)
+	}
+	if s.GetStackTraceLevel() != InfoLevel {
+		t.Errorf("Expecting InfoLevel, got %v", s.GetStackTraceLevel())
+	}
+	if defaultScope.GetStackTraceLevel() != InfoLevel {
+		t.Errorf("Expecting InfoLevel, got %v", defaultScope.GetStackTraceLevel())
+	}
+
+	o = DefaultOptions()
+	o.logCallers = "all"
+	if err := Configure(o); err != nil {
+		t.Errorf("Expecting success, got %v", err)
+	}
+	if !s.GetLogCallers() {
+		t.Error("Expecting true, got false")
+	}
+	if !defaultScope.GetLogCallers() {
+		t.Error("Expecting true, got false")
+	}
+}
+
 // Runs the given function while capturing everything sent to stdout
 func captureStdout(f func()) ([]string, error) {
 	tf, err := ioutil.TempFile("", "log_test")
@@ -340,4 +383,9 @@ func captureStdout(f func()) ([]string, error) {
 	}
 
 	return strings.Split(string(content), "\n"), nil
+}
+
+func resetGlobals() {
+	scopes = make(map[string]*Scope, 1)
+	defaultScope = registerDefaultScope()
 }
