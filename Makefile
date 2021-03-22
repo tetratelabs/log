@@ -12,7 +12,7 @@ test:
 
 LINTER := bin/golangci-lint
 $(LINTER):
-	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b bin v1.23.6
+	wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b bin v1.38.0
 
 lint: $(LINTER) golangci.yml
 	@echo "--- lint ---"

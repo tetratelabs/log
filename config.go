@@ -60,11 +60,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zapgrpc"
 	"google.golang.org/grpc/grpclog"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // none is used to disable logging output as well as to disable stack tracing.
