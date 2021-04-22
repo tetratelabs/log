@@ -112,11 +112,11 @@ func TestOddballs(t *testing.T) {
 		t.Error("Got success, expected failure")
 	}
 
-	o = DefaultOptions()
+	o = DefaultOptions() // Unknown scopes should be allowed
 	o.outputLevels = "foobar:debug"
 	err = Configure(o)
-	if err == nil {
-		t.Error("Got success, expected failure")
+	if err != nil {
+		t.Error(err)
 	}
 
 	o = DefaultOptions()
@@ -133,18 +133,18 @@ func TestOddballs(t *testing.T) {
 		t.Error("Got success, expected failure")
 	}
 
-	o = DefaultOptions()
+	o = DefaultOptions() // Unknown scopes should be allowed
 	o.stackTraceLevels = "foobar:debug"
 	err = Configure(o)
-	if err == nil {
-		t.Error("Got success, expected failure")
+	if err != nil {
+		t.Error(err)
 	}
 
-	o = DefaultOptions()
+	o = DefaultOptions() // Unknown scopes should be allowed
 	o.logCallers = "foobar"
 	err = Configure(o)
-	if err == nil {
-		t.Error("Got success, expected failure")
+	if err != nil {
+		t.Error(err)
 	}
 
 	o = DefaultOptions()
