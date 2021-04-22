@@ -55,6 +55,7 @@ package log
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -233,7 +234,7 @@ func updateScopes(options *Options, core zapcore.Core, errSink zapcore.WriteSync
 		if scope, ok := allScopes[s]; ok {
 			scope.SetLogCallers(true)
 		} else {
-			return fmt.Errorf("unknown scope '%s' specified", s)
+			_, _ = fmt.Fprintf(os.Stderr, "unknown scope '%s' specified", s)
 		}
 	}
 
@@ -259,7 +260,7 @@ func processLevels(allScopes map[string]*Scope, arg string, setter func(*Scope, 
 			}
 			return nil
 		} else {
-			return fmt.Errorf("unknown scope '%s' specified", s)
+			_, _ = fmt.Fprintf(os.Stderr, "unknown scope '%s' specified\n", s)
 		}
 	}
 
