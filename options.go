@@ -41,6 +41,16 @@ const (
 // Level is an enumeration of all supported log levels.
 type Level int
 
+// String returns the name of the level
+func (l Level) String() string {
+	return levelToString[l]
+}
+
+// LevelFrom returns the level for the given name
+func LevelFrom(name string) Level {
+	return stringToLevel[name]
+}
+
 const (
 	// NoneLevel disables logging
 	NoneLevel Level = iota
