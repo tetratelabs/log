@@ -47,8 +47,9 @@ func (l Level) String() string {
 }
 
 // LevelFrom returns the level for the given name
-func LevelFrom(name string) Level {
-	return stringToLevel[name]
+func LevelFrom(name string) (Level, bool) {
+	l, ok := stringToLevel[name]
+	return l, ok
 }
 
 const (
