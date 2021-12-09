@@ -24,7 +24,7 @@ import (
 )
 
 // unstructuredFormatString is the string used to format logging messages in the logger.
-const unstructuredFormatString = "%d/%02d/%02d %02d:%02d:%02d  %-5v\t%-10s\t%v"
+const unstructuredFormatString = "%d/%02d/%02d %02d:%02d:%02d  %-5v\t%-10s\t"
 
 // newUnstructured creates a new unstructured logger. It is meant for internal use only.
 // To instantiate a new logger use the log.register method.
@@ -34,6 +34,7 @@ func newUnstructured(name, description string) *Logger {
 	return logger
 }
 
+// unstructuredLog emits the unstructured log at the given level
 func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
 	t := l.now()
 
@@ -50,7 +51,9 @@ func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ..
 	var out bytes.Buffer
 	_, _ = out.WriteString(fmt.Sprintf(unstructuredFormatString,
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
-		level, l.name, fmt.Sprintf(msg, args...)))
+		level, l.name))
+
+	_, _ = out.WriteString(fmt.Sprintf(msg, args...))
 
 	if len(contextualArgs) > 0 {
 		_, _ = out.WriteString(" [")
