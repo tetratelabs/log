@@ -1,3 +1,4 @@
 .idea
 .vimrc
 .vscode
+build/
