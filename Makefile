@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MODULE_PATH ?= $(shell go mod edit -json | jq -r .Module.Path)
+MODULE_PATH ?= $(shell sed -ne 's/^module //gp' go.mod)
 
 # Tools
 LINTER    := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
