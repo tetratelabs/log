@@ -49,18 +49,22 @@ type Logger struct {
 	level int32
 	// writer where the log messages will be written
 	writer io.Writer
+	// emit is the function that will be used to actually emit the logs
+	emit func(logger *Logger, level Level, msg string, err error, keyValues ...interface{})
 }
 
 // newLogger creates a new logger. It is meant for internal use only.
 // To instantiate a new logger use the log.register method.
 func newLogger(name, description string) *Logger {
-	return &Logger{
+	logger := &Logger{
 		ctx:         context.Background(),
 		name:        name,
 		description: description,
 		level:       int32(LevelInfo),
 		writer:      os.Stdout,
+		emit:        structuredLog,
 	}
+	return logger
 }
 
 // Name returns the name of the logger
@@ -84,15 +88,7 @@ func (l *Logger) Debug(msg string, keyValues ...interface{}) {
 	if !l.enabled(LevelDebug) {
 		return
 	}
-
-	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
-	args = append(args, l.args...)
-	args = append(args, keyValues...)
-	if len(keyValues)%2 != 0 {
-		args = append(args, "(MISSING)")
-	}
-
-	l.log(LevelDebug, msg, args...)
+	l.emit(l, LevelDebug, msg, nil, keyValues...)
 }
 
 // Info emits a log message at info level with the given key value pairs.
@@ -102,19 +98,10 @@ func (l *Logger) Info(msg string, keyValues ...interface{}) {
 	if l.metric != nil {
 		l.metric.RecordContext(l.ctx, 1)
 	}
-
 	if !l.enabled(LevelInfo) {
 		return
 	}
-
-	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
-	args = append(args, l.args...)
-	args = append(args, keyValues...)
-	if len(keyValues)%2 != 0 {
-		args = append(args, "(MISSING)")
-	}
-
-	l.log(LevelInfo, msg, args...)
+	l.emit(l, LevelInfo, msg, nil, keyValues...)
 }
 
 // Error emits a log message at error level with the given key value pairs.
@@ -131,39 +118,7 @@ func (l *Logger) Error(msg string, err error, keyValues ...interface{}) {
 		return
 	}
 
-	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
-	args = append(args, l.args...)
-	args = append(args, keyValues...)
-	if len(keyValues)%2 != 0 {
-		args = append(args, "(MISSING)")
-	}
-	args = append(args, "error", err.Error())
-
-	l.log(LevelError, msg, args...)
-}
-
-// log the message at the given level
-func (l *Logger) log(level Level, msg string, keyValues ...interface{}) {
-	t := time.Now()
-
-	var out bytes.Buffer
-	_, _ = out.WriteString(fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d"`,
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second()))
-	_, _ = out.WriteString(fmt.Sprintf(" level=%v", level))
-	_, _ = out.WriteString(fmt.Sprintf(" scope=%q", l.name))
-	_, _ = out.WriteString(fmt.Sprintf(" msg=%q", msg))
-
-	for i := 0; i < len(keyValues); i += 2 {
-		if k, ok := keyValues[i].(string); ok {
-			if v, ok := keyValues[i+1].(string); ok {
-				_, _ = out.WriteString(fmt.Sprintf(` %s=%q`, k, v))
-			} else {
-				_, _ = out.WriteString(fmt.Sprintf(` %s=%v`, k, keyValues[i+1]))
-			}
-		}
-	}
-
-	_, _ = fmt.Fprintln(l.writer, out.String())
+	l.emit(l, LevelError, msg, err, keyValues...)
 }
 
 // With returns Logger with provided key value pairs attached.
@@ -175,17 +130,7 @@ func (l *Logger) With(keyValues ...interface{}) telemetry.Logger {
 		keyValues = append(keyValues, "(MISSING)")
 	}
 
-	newLogger := &Logger{
-		args:        make([]interface{}, len(l.args), len(l.args)+len(keyValues)),
-		ctx:         l.ctx,
-		metric:      l.metric,
-		level:       atomic.LoadInt32(&l.level),
-		writer:      l.writer,
-		name:        l.name,
-		description: l.description,
-	}
-
-	copy(newLogger.args, l.args)
+	newLogger := l.clone()
 
 	for i := 0; i < len(keyValues); i += 2 {
 		if k, ok := keyValues[i].(string); ok {
@@ -199,18 +144,8 @@ func (l *Logger) With(keyValues ...interface{}) telemetry.Logger {
 // Context attaches provided Context to the Logger allowing metadata found in
 // this context to be used for log lines and metrics labels.
 func (l *Logger) Context(ctx context.Context) telemetry.Logger {
-	newLogger := &Logger{
-		args:        make([]interface{}, len(l.args)),
-		ctx:         ctx,
-		metric:      l.metric,
-		level:       atomic.LoadInt32(&l.level),
-		writer:      l.writer,
-		name:        l.name,
-		description: l.description,
-	}
-
-	copy(newLogger.args, l.args)
-
+	newLogger := l.clone()
+	newLogger.ctx = ctx
 	return newLogger
 }
 
@@ -218,17 +153,60 @@ func (l *Logger) Context(ctx context.Context) telemetry.Logger {
 // record each invocation of Info and Error log lines. If context is available
 // in the logger, it can be used for Metrics labels.
 func (l *Logger) Metric(m telemetry.Metric) telemetry.Logger {
+	newLogger := l.clone()
+	newLogger.metric = m
+	return newLogger
+}
+
+// clone the current logger and return it
+func (l *Logger) clone() *Logger {
 	newLogger := &Logger{
 		args:        make([]interface{}, len(l.args)),
 		ctx:         l.ctx,
-		metric:      m,
+		metric:      l.metric,
 		level:       atomic.LoadInt32(&l.level),
 		writer:      l.writer,
 		name:        l.name,
 		description: l.description,
+		emit:        l.emit,
 	}
 
 	copy(newLogger.args, l.args)
 
 	return newLogger
+}
+
+// structuredLog emits the structured log at the given level
+func structuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
+	t := time.Now()
+
+	// merge all args
+	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
+	args = append(args, l.args...)
+	args = append(args, keyValues...)
+	if len(keyValues)%2 != 0 {
+		args = append(args, "(MISSING)")
+	}
+	if err != nil {
+		args = append(args, "error", err.Error())
+	}
+
+	var out bytes.Buffer
+	_, _ = out.WriteString(fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d"`,
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second()))
+	_, _ = out.WriteString(fmt.Sprintf(" level=%v", level))
+	_, _ = out.WriteString(fmt.Sprintf(" scope=%q", l.name))
+	_, _ = out.WriteString(fmt.Sprintf(" msg=%q", msg))
+
+	for i := 0; i < len(args); i += 2 {
+		if k, ok := args[i].(string); ok {
+			if v, ok := args[i+1].(string); ok {
+				_, _ = out.WriteString(fmt.Sprintf(` %s=%q`, k, v))
+			} else {
+				_, _ = out.WriteString(fmt.Sprintf(` %s=%v`, k, args[i+1]))
+			}
+		}
+	}
+
+	_, _ = fmt.Fprintln(l.writer, out.String())
 }

@@ -25,16 +25,6 @@ import (
 	"github.com/tetratelabs/telemetry"
 )
 
-const (
-	rdate   = `[0-9]{4}/[0-9]{2}/[0-9]{2}` // matches the date part of a log
-	rtime   = `[0-9]{2}:[0-9]{2}:[0-9]{2}` // matches the time part of a log
-	rprefix = rdate + " " + rtime          // log prefix match
-)
-
-func match(n string, l Level, keyvalues string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf(`^time=%q level=%s scope=%q msg="text" ctx="value" lvl=info missing="\(MISSING\)"%s\n$`, rprefix, l, n, keyvalues))
-}
-
 func TestLogger(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -96,13 +86,6 @@ func TestLogger(t *testing.T) {
 	}
 }
 
-type mockMetric struct {
-	telemetry.Metric
-	count float64
-}
-
-func (m *mockMetric) RecordContext(_ context.Context, value float64) { m.count += value }
-
 func TestAsLevel(t *testing.T) {
 	tests := []struct {
 		level string
@@ -129,3 +112,20 @@ func TestAsLevel(t *testing.T) {
 		})
 	}
 }
+
+const (
+	rdate   = `[0-9]{4}/[0-9]{2}/[0-9]{2}` // matches the date part of a log
+	rtime   = `[0-9]{2}:[0-9]{2}:[0-9]{2}` // matches the time part of a log
+	rprefix = rdate + " " + rtime          // log prefix match
+)
+
+func match(n string, l Level, keyvalues string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf(`^time=%q level=%s scope=%q msg="text" ctx="value" lvl=info missing="\(MISSING\)"%s\n$`, rprefix, l, n, keyvalues))
+}
+
+type mockMetric struct {
+	telemetry.Metric
+	count float64
+}
+
+func (m *mockMetric) RecordContext(_ context.Context, value float64) { m.count += value }
