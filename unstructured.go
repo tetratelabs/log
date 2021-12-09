@@ -19,7 +19,6 @@ package log
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	"github.com/tetratelabs/telemetry"
 )
@@ -36,7 +35,7 @@ func newUnstructured(name, description string) *Logger {
 }
 
 func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
-	t := time.Now()
+	t := l.now()
 
 	// merge contextual args
 	contextualArgs := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
@@ -68,6 +67,5 @@ func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ..
 	}
 
 	_, _ = out.WriteString("\n")
-
-	_, _ = fmt.Fprintln(l.writer, out.String())
+	_, _ = out.WriteTo(l.writer)
 }

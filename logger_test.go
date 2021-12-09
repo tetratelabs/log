@@ -120,7 +120,7 @@ const (
 )
 
 func match(n string, l Level, keyvalues string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf(`^time=%q level=%s scope=%q msg="text" ctx="value" lvl=info missing="\(MISSING\)"%s\n$`, rprefix, l, n, keyvalues))
+	return regexp.MustCompile(fmt.Sprintf("^time=%q level=%s scope=%q msg=\"text\" ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"%s\\n$", rprefix, l, n, keyvalues))
 }
 
 type mockMetric struct {

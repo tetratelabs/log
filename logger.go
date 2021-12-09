@@ -49,6 +49,8 @@ type Logger struct {
 	level int32
 	// writer where the log messages will be written
 	writer io.Writer
+	// now is a function used to obtain the timestamps for the logs
+	now func() time.Time
 	// emit is the function that will be used to actually emit the logs
 	emit func(logger *Logger, level Level, msg string, err error, keyValues ...interface{})
 }
@@ -61,6 +63,7 @@ func newLogger(name, description string) *Logger {
 		name:        name,
 		description: description,
 		level:       int32(LevelInfo),
+		now:         time.Now,
 		writer:      os.Stdout,
 		emit:        structuredLog,
 	}
@@ -166,6 +169,7 @@ func (l *Logger) clone() *Logger {
 		metric:      l.metric,
 		level:       atomic.LoadInt32(&l.level),
 		writer:      l.writer,
+		now:         l.now,
 		name:        l.name,
 		description: l.description,
 		emit:        l.emit,
@@ -178,7 +182,7 @@ func (l *Logger) clone() *Logger {
 
 // structuredLog emits the structured log at the given level
 func structuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
-	t := time.Now()
+	t := l.now()
 
 	// merge all args
 	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
@@ -208,5 +212,6 @@ func structuredLog(l *Logger, level Level, msg string, err error, keyValues ...i
 		}
 	}
 
-	_, _ = fmt.Fprintln(l.writer, out.String())
+	_, _ = out.WriteString("\n")
+	_, _ = out.WriteTo(l.writer)
 }
