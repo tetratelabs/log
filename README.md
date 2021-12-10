@@ -12,7 +12,6 @@ structured and unstructured logging implementations.
 
 For information on the Telemetry Logger interface, see: https://github.com/tetratelabs/telemetry
 
-
 ## License
 
-This sowftare is licensed under the Apache License 2.0. See [LICENSE](LICENSE) file for details.
+This software is licensed under the Apache License 2.0. See [LICENSE](LICENSE) file for details.
