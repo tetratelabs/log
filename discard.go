@@ -21,10 +21,10 @@ import (
 )
 
 // compile time check for compatibility with the telemetry.Logger interface.
-var _ telemetry.Logger = (*discard)(nil)
+var _ telemetry.Logger = (*Discard)(nil)
 
-// discard is a logger that does not emit log messages but still emits metrics.
-type discard struct {
+// Discard is a logger that does not emit log messages but still emits metrics.
+type Discard struct {
 	// ctx holds the Context to extract key-value pairs from to be added to each
 	// log line.
 	ctx context.Context
@@ -32,13 +32,21 @@ type discard struct {
 	metric telemetry.Metric
 }
 
-// Discard returns a nre logger that discards log messages but still emits the corresponding metrics, if set.
-func Discard() telemetry.Logger {
-	return &discard{ctx: context.Background()}
+// NewDiscard creates a new Discard logger
+func NewDiscard() *Discard {
+	return &Discard{ctx: context.Background()}
+}
+
+// discardName is the name for the discard logging scope
+const discardName = "/dev/null"
+
+// Name implements the Scope interface
+func (*Discard) Name() string {
+	return discardName
 }
 
 // Info emits the configured metric, if any.
-func (d *discard) Info(string, ...interface{}) {
+func (d *Discard) Info(string, ...interface{}) {
 	// even if we don't output the log line due to the level configuration,
 	// we always emit the Metric if it is set.
 	if d.metric != nil {
@@ -47,7 +55,7 @@ func (d *discard) Info(string, ...interface{}) {
 }
 
 // Error emits the configured metric, if any.
-func (d *discard) Error(string, error, ...interface{}) {
+func (d *Discard) Error(string, error, ...interface{}) {
 	// even if we don't output the log line due to the level configuration,
 	// we always emit the Metric if it is set.
 	if d.metric != nil {
@@ -56,22 +64,22 @@ func (d *discard) Error(string, error, ...interface{}) {
 }
 
 // Debug is a noop
-func (d *discard) Debug(string, ...interface{}) {}
+func (d *Discard) Debug(string, ...interface{}) {}
 
 // With is a noop
-func (d *discard) With(...interface{}) telemetry.Logger {
+func (d *Discard) With(...interface{}) telemetry.Logger {
 	return d
 }
 
 // Context attaches provided Context to the Logger allowing metadata found in
 // this context to be used for metrics labels.
-func (d *discard) Context(ctx context.Context) telemetry.Logger {
-	return &discard{ctx: ctx, metric: d.metric}
+func (d *Discard) Context(ctx context.Context) telemetry.Logger {
+	return &Discard{ctx: ctx, metric: d.metric}
 }
 
 // Metric attaches provided Metric to the Logger allowing this metric to
 // record each invocation of Info and Error log lines. If context is available
 // in the logger, it can be used for Metrics labels.
-func (d *discard) Metric(m telemetry.Metric) telemetry.Logger {
-	return &discard{ctx: d.ctx, metric: m}
+func (d *Discard) Metric(m telemetry.Metric) telemetry.Logger {
+	return &Discard{ctx: d.ctx, metric: m}
 }

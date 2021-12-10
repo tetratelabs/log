@@ -21,13 +21,14 @@ func TestLoggers(t *testing.T) {
 	unstructured := RegisterUnstructured("unstructured", "test logger")
 
 	// Verify loggers are registered
-	if GetLogger("custom-logger") == nil {
+	if GetLogger("custom-logger").Name() == discardName {
 		t.Fatal("custom-logger was not registered")
 	}
-	if GetLogger("unstructured") == nil {
+	if GetLogger("unstructured").Name() == discardName {
 		t.Fatal("unstructured was not registered")
 	}
-	if GetLogger("unexisting") != nil {
+
+	if GetLogger("unexisting").Name() != discardName {
 		t.Fatal("unexisting logger was not expected to be registered")
 	}
 
