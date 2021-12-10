@@ -32,6 +32,20 @@ func Register(name, description string) *Logger {
 	return l
 }
 
+// RegisterUnstructured a new unstructured logger with the given name.
+// If the logger already exists, the already registered logger is returned.
+func RegisterUnstructured(name, description string) *Logger {
+	l := reg.GetLogger(name)
+	if l != nil {
+		return l
+	}
+
+	l = newUnstructured(name, description)
+	reg.Register(l)
+
+	return l
+}
+
 // Loggers returns the list of all registered loggers.
 func Loggers() []*Logger { return reg.Loggers() }
 
