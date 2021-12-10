@@ -113,6 +113,16 @@ func TestAsLevel(t *testing.T) {
 	}
 }
 
+func TestSetLevel(t *testing.T) {
+	logger := Register("level", "test logger")
+	withvalues := logger.With("key", "value").(*Logger)
+	logger.SetLevel(LevelDebug)
+
+	if withvalues.Level() != LevelDebug {
+		t.Fatalf("logger.Level()=%v, want: %v", withvalues.Level(), LevelDebug)
+	}
+}
+
 const (
 	rdate   = `[0-9]{4}/[0-9]{2}/[0-9]{2}` // matches the date part of a log
 	rtime   = `[0-9]{2}:[0-9]{2}:[0-9]{2}` // matches the time part of a log

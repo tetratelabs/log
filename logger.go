@@ -46,7 +46,7 @@ type Logger struct {
 	// description for the scoped logger.
 	description string
 	// level holds the configured log level.
-	level int32
+	level *int32
 	// writer where the log messages will be written
 	writer io.Writer
 	// now is a function used to obtain the timestamps for the logs
@@ -58,11 +58,12 @@ type Logger struct {
 // newLogger creates a new logger. It is meant for internal use only.
 // To instantiate a new logger use the log.register method.
 func newLogger(name, description string) *Logger {
+	lvl := int32(LevelInfo)
 	logger := &Logger{
 		ctx:         context.Background(),
 		name:        name,
 		description: description,
-		level:       int32(LevelInfo),
+		level:       &lvl,
 		now:         time.Now,
 		writer:      os.Stdout,
 		emit:        structuredLog,
@@ -77,10 +78,10 @@ func (l *Logger) Name() string { return l.name }
 func (l *Logger) Description() string { return l.description }
 
 // Level returns the logging level configured for this logger.
-func (l *Logger) Level() Level { return Level(atomic.LoadInt32(&l.level)) }
+func (l *Logger) Level() Level { return Level(atomic.LoadInt32(l.level)) }
 
 // SetLevel configures the logging level for the logger.
-func (l *Logger) SetLevel(level Level) { atomic.StoreInt32(&l.level, int32(level)) }
+func (l *Logger) SetLevel(level Level) { atomic.StoreInt32(l.level, int32(level)) }
 
 // enabled checks if the current logger should emit log messages for the given
 // logging level.
@@ -167,7 +168,7 @@ func (l *Logger) clone() *Logger {
 		args:        make([]interface{}, len(l.args)),
 		ctx:         l.ctx,
 		metric:      l.metric,
-		level:       atomic.LoadInt32(&l.level),
+		level:       l.level,
 		writer:      l.writer,
 		now:         l.now,
 		name:        l.name,
