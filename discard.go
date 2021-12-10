@@ -56,9 +56,7 @@ func (d *discard) Error(string, error, ...interface{}) {
 }
 
 // Debug is a noop
-func (d *discard) Debug(string, ...interface{}) {
-
-}
+func (d *discard) Debug(string, ...interface{}) {}
 
 // With is a noop
 func (d *discard) With(...interface{}) telemetry.Logger {
