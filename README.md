@@ -1,7 +1,7 @@
 # Common logging infrastructure
 
 [![CI](https://github.com/tetratelabs/log/actions/workflows/ci.yaml/badge.svg?branch=v2)](https://github.com/tetratelabs/log/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/tetratelabs/log/branch/master/graph/badge.svg?token=WYHRXYAX0B)](https://codecov.io/gh/tetratelabs/log)
+[![codecov](https://codecov.io/gh/tetratelabs/log/branch/v2/graph/badge.svg?token=WYHRXYAX0B)](https://codecov.io/gh/tetratelabs/log)
 
 This package contains a [Telemetry Logger](https://github.com/tetratelabs/telemetry)
 interface compatible implementation that allows configuring logging scopes that can be
