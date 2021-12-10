@@ -39,15 +39,16 @@ func TestLogger(t *testing.T) {
 		{"disabled-error", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
 		{"info", LevelInfo, func(l telemetry.Logger) { l.Info("text") }, match("info", LevelInfo, ""), 1},
 		{"info-missing", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") }, match("info-missing", LevelInfo, ` where="\(MISSING\)"`), 1},
-		{"info-with-values", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there") }, match("info-with-values", LevelInfo, ` where="there"`), 1},
+		{"info-with-values", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
+			match("info-with-values", LevelInfo, ` where="there"`), 1},
 		{"error", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, match("error", LevelError, ` error="error"`), 1},
 		{"error-missing", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
 			match("error-missing", LevelError, ` where="\(MISSING\)" error="error"`), 1},
-		{"error-with-values", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there") },
+		{"error-with-values", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
 			match("error-with-values", LevelError, ` where="there" error="error"`), 1},
 		{"debug", LevelDebug, func(l telemetry.Logger) { l.Debug("text") }, match("debug", LevelDebug, ""), 0},
 		{"debug-missing", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") }, match("debug-missing", LevelDebug, ` where="\(MISSING\)"`), 0},
-		{"debug-with-values", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there") },
+		{"debug-with-values", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
 			match("debug-with-values", LevelDebug, ` where="there"`), 0},
 	}
 
@@ -71,7 +72,7 @@ func TestLogger(t *testing.T) {
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With("lvl", LevelInfo).With("missing")
+			l := logger.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
 
 			tt.logfunc(l)
 

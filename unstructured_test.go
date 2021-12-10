@@ -64,7 +64,7 @@ func TestUnstructured(t *testing.T) {
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With("lvl", LevelInfo).With("missing")
+			l := logger.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
 
 			tt.logfunc(l)
 
@@ -80,5 +80,5 @@ func TestUnstructured(t *testing.T) {
 }
 
 func matchUnstructured(n string, l Level, msg string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%-10s\\t%s \\[ ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\" \\]\\n$", rprefix, l, n, msg))
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%-10s\\t%s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, n, msg))
 }

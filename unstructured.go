@@ -57,18 +57,24 @@ func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ..
 
 	if len(contextualArgs) > 0 {
 		_, _ = out.WriteString(" [")
-		for i := 0; i < len(contextualArgs); i += 2 {
-			if k, ok := contextualArgs[i].(string); ok {
-				if v, ok := contextualArgs[i+1].(string); ok {
-					_, _ = out.WriteString(fmt.Sprintf(` %s=%q`, k, v))
-				} else {
-					_, _ = out.WriteString(fmt.Sprintf(` %s=%v`, k, contextualArgs[i+1]))
-				}
-			}
+		writeKeyValue(&out, contextualArgs[0], contextualArgs[1])
+		for i := 2; i < len(contextualArgs); i += 2 {
+			_, _ = out.WriteString(" ")
+			writeKeyValue(&out, contextualArgs[i], contextualArgs[i+1])
 		}
-		_, _ = out.WriteString(" ]")
+		_, _ = out.WriteString("]")
 	}
 
 	_, _ = out.WriteString("\n")
 	_, _ = out.WriteTo(l.writer)
+}
+
+func writeKeyValue(b *bytes.Buffer, key interface{}, value interface{}) {
+	if k, ok := key.(string); ok {
+		if v, ok := value.(string); ok {
+			_, _ = b.WriteString(fmt.Sprintf(`%s=%q`, k, v))
+		} else {
+			_, _ = b.WriteString(fmt.Sprintf(`%s=%v`, k, value))
+		}
+	}
 }
