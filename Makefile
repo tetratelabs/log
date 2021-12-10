@@ -19,7 +19,7 @@ LINTER    := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
 LICENSER  := github.com/liamawhite/licenser@v0.6.1-0.20210729145742-be6c77bf6a1f
 GOIMPORTS := golang.org/x/tools/cmd/goimports@v0.1.5
 
-.PHONY: BUILD
+.PHONY: build
 build:
 	go build ./...
 
