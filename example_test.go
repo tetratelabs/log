@@ -51,7 +51,7 @@ func ExampleLogger() {
 }
 
 func ExampleLogger_unstructured() {
-	unstructured := RegisterUnstructured("unstructured", "Unstructured logger")
+	unstructured := RegisterUnstructured("unstructured-example", "Unstructured logger")
 	unstructured.now = mockTime // Mock time to have a consistent output
 
 	// Normal and error logging
@@ -68,8 +68,8 @@ func ExampleLogger_unstructured() {
 	unstructured.Context(ctx).With("component", "middleware").Info("enriched message")
 
 	// Output:
-	// 2021/12/09 17:37:46  info 	unstructured	an info message with a value
-	// 2021/12/09 17:37:46  error	unstructured	validation error in arg1: validation failed
-	// 2021/12/09 17:37:46  debug	unstructured	an enabled debug message
-	// 2021/12/09 17:37:46  info 	unstructured	enriched message [ request-id=123 component="middleware" ]
+	// 2021/12/09 17:37:46  info 	unstructured-example	an info message with a value
+	// 2021/12/09 17:37:46  error	unstructured-example	validation error in arg1: validation failed
+	// 2021/12/09 17:37:46  debug	unstructured-example	an enabled debug message
+	// 2021/12/09 17:37:46  info 	unstructured-example	enriched message [ request-id=123 component="middleware" ]
 }
