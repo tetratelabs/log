@@ -28,6 +28,10 @@ TEST_OPTS ?= -race
 test:
 	go test $(TEST_OPTS) ./...
 
+.PHONY: bench
+bench:
+	go test -bench=. ./...
+
 .PHONY: coverage
 coverage:
 	mkdir -p build

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"testing"
 
@@ -121,6 +122,38 @@ func TestSetLevel(t *testing.T) {
 
 	if withvalues.Level() != LevelDebug {
 		t.Fatalf("logger.Level()=%v, want: %v", withvalues.Level(), LevelDebug)
+	}
+}
+
+func BenchmarkStructuredLog3Args(b *testing.B)  { benchmarkLogger(b, 1, newLogger, structuredLog) }
+func BenchmarkStructuredLog9Args(b *testing.B)  { benchmarkLogger(b, 3, newLogger, structuredLog) }
+func BenchmarkStructuredLog15Args(b *testing.B) { benchmarkLogger(b, 5, newLogger, structuredLog) }
+func BenchmarkStructuredLog30Args(b *testing.B) { benchmarkLogger(b, 10, newLogger, structuredLog) }
+
+func benchmarkLogger(
+	b *testing.B,
+	nargs int,
+	factory func(string, string) *Logger,
+	logFunc func(l *Logger, level Level, msg string, err error, keyValues ...interface{}),
+) {
+	var (
+		ctx    = context.Background()
+		logger = factory(fmt.Sprintf("bench%d", nargs), "bench")
+		args   = make([]interface{}, 0, nargs*2)
+	)
+
+	for i := 0; i < nargs; i++ {
+		ctx = telemetry.KeyValuesToContext(ctx, fmt.Sprintf("ctx%d", i), i)
+		logger = logger.With(fmt.Sprintf("with%d", i), i).(*Logger)
+		args = append(args, fmt.Sprintf("arg%d", i), i)
+	}
+
+	logger = logger.Context(ctx).(*Logger)
+	logger.writer = io.Discard
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		logFunc(logger, LevelInfo, "bench", nil, args...)
 	}
 }
 

@@ -38,43 +38,40 @@ func newUnstructured(name, description string) *Logger {
 func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
 	t := l.now()
 
-	// merge contextual args
-	contextualArgs := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
-	contextualArgs = append(contextualArgs, l.args...)
-
-	// args for the unstructured message format string
-	args := append([]interface{}{}, keyValues...)
-	if err != nil {
-		args = append(args, err)
-	}
-
 	var out bytes.Buffer
 	_, _ = out.WriteString(fmt.Sprintf(unstructuredFormatString,
 		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
 		level, l.name))
 
-	_, _ = out.WriteString(fmt.Sprintf(msg, args...))
+	if err != nil {
+		keyValues = append(keyValues, err)
+	}
+	_, _ = out.WriteString(fmt.Sprintf(msg, keyValues...))
 
-	if len(contextualArgs) > 0 {
+	fromCtx := telemetry.KeyValuesFromContext(l.ctx)
+	nCtx := len(fromCtx)
+	nArgs := len(l.args)
+
+	if nCtx > 0 { // write the context args without a Leading whitespace
 		_, _ = out.WriteString(" [")
-		writeKeyValue(&out, contextualArgs[0], contextualArgs[1])
-		for i := 2; i < len(contextualArgs); i += 2 {
-			_, _ = out.WriteString(" ")
-			writeKeyValue(&out, contextualArgs[i], contextualArgs[i+1])
+		writeKeyValue(&out, fromCtx, 0, nCtx)
+		writeArgs(&out, fromCtx[2:])
+	}
+
+	if nArgs > 0 {
+		if nCtx > 0 {
+			writeArgs(&out, l.args)
+		} else { // write the logger args without a Leading whitespace
+			_, _ = out.WriteString(" [")
+			writeKeyValue(&out, l.args, 0, nArgs)
+			writeArgs(&out, l.args[2:])
 		}
+	}
+
+	if nCtx > 0 || nArgs > 0 {
 		_, _ = out.WriteString("]")
 	}
 
 	_, _ = out.WriteString("\n")
 	_, _ = out.WriteTo(l.writer)
-}
-
-func writeKeyValue(b *bytes.Buffer, key interface{}, value interface{}) {
-	if k, ok := key.(string); ok {
-		if v, ok := value.(string); ok {
-			_, _ = b.WriteString(fmt.Sprintf(`%s=%q`, k, v))
-		} else {
-			_, _ = b.WriteString(fmt.Sprintf(`%s=%v`, k, value))
-		}
-	}
 }

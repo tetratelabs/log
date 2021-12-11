@@ -79,6 +79,22 @@ func TestUnstructured(t *testing.T) {
 	}
 }
 
+func BenchmarkUnstructuredLog3Args(b *testing.B) {
+	benchmarkLogger(b, 1, newUnstructured, unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog9Args(b *testing.B) {
+	benchmarkLogger(b, 3, newUnstructured, unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog15Args(b *testing.B) {
+	benchmarkLogger(b, 5, newUnstructured, unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog30Args(b *testing.B) {
+	benchmarkLogger(b, 10, newUnstructured, unstructuredLog)
+}
+
 func matchUnstructured(n string, l Level, msg string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%-10s\\t%s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, n, msg))
 }
