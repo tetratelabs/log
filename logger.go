@@ -188,8 +188,8 @@ func structuredLog(l *Logger, level Level, msg string, err error, keyValues ...i
 	var out bytes.Buffer
 
 	_, _ = out.WriteString(
-		fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d" level=%v scope=%q msg=%q`,
-			t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
+		fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d" level=%s scope=%q msg=%q`,
+			t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(),
 			level, l.name, msg))
 
 	writeArgs(&out, telemetry.KeyValuesFromContext(l.ctx))

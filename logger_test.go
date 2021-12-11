@@ -125,6 +125,7 @@ func TestSetLevel(t *testing.T) {
 	}
 }
 
+func BenchmarkStructuredLog0Args(b *testing.B)  { benchmarkLogger(b, 0, newLogger, structuredLog) }
 func BenchmarkStructuredLog3Args(b *testing.B)  { benchmarkLogger(b, 1, newLogger, structuredLog) }
 func BenchmarkStructuredLog9Args(b *testing.B)  { benchmarkLogger(b, 3, newLogger, structuredLog) }
 func BenchmarkStructuredLog15Args(b *testing.B) { benchmarkLogger(b, 5, newLogger, structuredLog) }

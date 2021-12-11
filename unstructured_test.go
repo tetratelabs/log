@@ -79,6 +79,10 @@ func TestUnstructured(t *testing.T) {
 	}
 }
 
+func BenchmarkUnstructuredLog0Args(b *testing.B) {
+	benchmarkLogger(b, 0, newUnstructured, unstructuredLog)
+}
+
 func BenchmarkUnstructuredLog3Args(b *testing.B) {
 	benchmarkLogger(b, 1, newUnstructured, unstructuredLog)
 }

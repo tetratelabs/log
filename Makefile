@@ -28,9 +28,10 @@ TEST_OPTS ?= -race
 test:
 	go test $(TEST_OPTS) ./...
 
+BENCH_OPTS ?=
 .PHONY: bench
 bench:
-	go test -bench=. ./...
+	go test -bench=. $(BENCH_OPTS) ./...
 
 .PHONY: coverage
 coverage:

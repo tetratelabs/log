@@ -40,7 +40,7 @@ func unstructuredLog(l *Logger, level Level, msg string, err error, keyValues ..
 
 	var out bytes.Buffer
 	_, _ = out.WriteString(fmt.Sprintf(unstructuredFormatString,
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(),
+		t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(),
 		level, l.name))
 
 	if err != nil {
