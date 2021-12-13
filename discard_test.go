@@ -35,16 +35,15 @@ func TestDiscard(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := NewDiscard()
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With("lvl", LevelInfo).With("missing")
+			l := Discard.Context(ctx).Metric(&metric).With().With("lvl", LevelInfo).With("missing")
 
 			tt.logfunc(l)
 
-			if metric.count != tt.metricCount {
-				t.Fatalf("metric.count=%v, want %v", metric.count, tt.metricCount)
+			if metric.count != 0 {
+				t.Fatalf("metric.count=%v, want 0", metric.count)
 			}
 		})
 	}

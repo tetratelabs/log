@@ -20,15 +20,15 @@ import (
 	"github.com/tetratelabs/telemetry"
 )
 
-// Scope is a named logger that can be configured independently
-type Scope interface {
+// ScopedLogger is a named logger that can be configured independently
+type ScopedLogger interface {
 	telemetry.Logger
 	Name() string
 }
 
 // Register a new logger with the given name.
 // If the logger already exists, the already registered logger is returned.
-func Register(name, description string) Scope {
+func Register(name, description string) ScopedLogger {
 	if l, ok := reg.GetLogger(name); ok {
 		return l
 	}
@@ -41,7 +41,7 @@ func Register(name, description string) Scope {
 
 // RegisterUnstructured a new unstructured logger with the given name.
 // If the logger already exists, the already registered logger is returned.
-func RegisterUnstructured(name, description string) Scope {
+func RegisterUnstructured(name, description string) ScopedLogger {
 	if l, ok := reg.GetLogger(name); ok {
 		return l
 	}
@@ -53,29 +53,29 @@ func RegisterUnstructured(name, description string) Scope {
 }
 
 // Loggers returns the list of all registered loggers.
-func Loggers() []Scope { return reg.Loggers() }
+func Loggers() []ScopedLogger { return reg.Loggers() }
 
 // GetLogger gets a registered logger by name.
-func GetLogger(name string) Scope {
+func GetLogger(name string) ScopedLogger {
 	logger, _ := reg.GetLogger(name)
 	return logger
 }
 
 // reg is a registry of all registered loggers.
-var reg = &registry{loggers: make(map[string]Scope)}
+var reg = &registry{loggers: make(map[string]ScopedLogger)}
 
 // registry keeps track of all registered loggers.
 type registry struct {
 	mu      sync.RWMutex
-	loggers map[string]Scope
+	loggers map[string]ScopedLogger
 }
 
 // Loggers returns the list of all registered loggers.
-func (r *registry) Loggers() []Scope {
+func (r *registry) Loggers() []ScopedLogger {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	loggers := make([]Scope, 0, len(r.loggers))
+	loggers := make([]ScopedLogger, 0, len(r.loggers))
 	for _, l := range r.loggers {
 		loggers = append(loggers, l)
 	}
@@ -84,20 +84,20 @@ func (r *registry) Loggers() []Scope {
 }
 
 // GetLogger a registered logger by name.
-func (r *registry) GetLogger(name string) (Scope, bool) {
+func (r *registry) GetLogger(name string) (ScopedLogger, bool) {
 	r.mu.RLock()
 	logger, ok := r.loggers[name]
 	r.mu.RUnlock()
 
 	if !ok {
-		return NewDiscard(), false
+		return Discard, false
 	}
 
 	return logger, true
 }
 
 // Register a logger into the registry.
-func (r *registry) Register(logger Scope) {
+func (r *registry) Register(logger ScopedLogger) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
