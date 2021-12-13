@@ -71,5 +71,5 @@ func ExampleLogger_unstructured() {
 	// 2021/12/09 17:37:46  info 	unstructured-example	an info message with a value
 	// 2021/12/09 17:37:46  error	unstructured-example	validation error in arg1: validation failed
 	// 2021/12/09 17:37:46  debug	unstructured-example	an enabled debug message
-	// 2021/12/09 17:37:46  info 	unstructured-example	enriched message [ request-id=123 component="middleware" ]
+	// 2021/12/09 17:37:46  info 	unstructured-example	enriched message [request-id=123 component="middleware"]
 }

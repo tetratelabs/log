@@ -185,34 +185,52 @@ func (l *Logger) clone() *Logger {
 func structuredLog(l *Logger, level Level, msg string, err error, keyValues ...interface{}) {
 	t := l.now()
 
-	// merge all args
-	args := append([]interface{}{}, telemetry.KeyValuesFromContext(l.ctx)...)
-	args = append(args, l.args...)
-	args = append(args, keyValues...)
-	if len(keyValues)%2 != 0 {
-		args = append(args, "(MISSING)")
-	}
-	if err != nil {
-		args = append(args, "error", err.Error())
-	}
-
 	var out bytes.Buffer
-	_, _ = out.WriteString(fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d"`,
-		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second()))
-	_, _ = out.WriteString(fmt.Sprintf(" level=%v", level))
-	_, _ = out.WriteString(fmt.Sprintf(" scope=%q", l.name))
-	_, _ = out.WriteString(fmt.Sprintf(" msg=%q", msg))
 
-	for i := 0; i < len(args); i += 2 {
-		if k, ok := args[i].(string); ok {
-			if v, ok := args[i+1].(string); ok {
-				_, _ = out.WriteString(fmt.Sprintf(` %s=%q`, k, v))
-			} else {
-				_, _ = out.WriteString(fmt.Sprintf(` %s=%v`, k, args[i+1]))
-			}
-		}
+	_, _ = out.WriteString(
+		fmt.Sprintf(`time="%d/%02d/%02d %02d:%02d:%02d" level=%s scope=%q msg=%q`,
+			t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(),
+			level, l.name, msg))
+
+	writeArgs(&out, telemetry.KeyValuesFromContext(l.ctx))
+	writeArgs(&out, l.args)
+	writeArgs(&out, keyValues)
+
+	if err != nil {
+		_, _ = out.WriteString(" error=\"")
+		_, _ = out.WriteString(err.Error())
+		_, _ = out.WriteString("\"")
 	}
 
 	_, _ = out.WriteString("\n")
 	_, _ = out.WriteTo(l.writer)
+}
+
+// writeArgs writes the list of arguments to the buffer
+func writeArgs(b *bytes.Buffer, args []interface{}) {
+	n := len(args)
+	for i := 0; i < n; i += 2 {
+		if _, ok := args[i].(string); !ok {
+			continue
+		}
+		_, _ = b.WriteString(" ")
+		writeKeyValue(b, args, i, n)
+	}
+}
+
+// writeKeyValue writes a key value pair to the buffer
+func writeKeyValue(b *bytes.Buffer, args []interface{}, i, n int) {
+	k := args[i].(string) // precondition: this has already been checked, and it is safe to cast
+	_, _ = b.WriteString(k)
+	_, _ = b.WriteString("=")
+	if i+1 >= n {
+		_, _ = b.WriteString("\"(MISSING)\"")
+		return
+	}
+
+	if v, ok := args[i+1].(string); ok {
+		_, _ = b.WriteString(fmt.Sprintf("%q", v))
+	} else {
+		_, _ = b.WriteString(fmt.Sprintf("%v", args[i+1]))
+	}
 }

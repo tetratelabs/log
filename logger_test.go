@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"regexp"
 	"testing"
 
@@ -39,15 +40,16 @@ func TestLogger(t *testing.T) {
 		{"disabled-error", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
 		{"info", LevelInfo, func(l telemetry.Logger) { l.Info("text") }, match("info", LevelInfo, ""), 1},
 		{"info-missing", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") }, match("info-missing", LevelInfo, ` where="\(MISSING\)"`), 1},
-		{"info-with-values", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there") }, match("info-with-values", LevelInfo, ` where="there"`), 1},
+		{"info-with-values", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
+			match("info-with-values", LevelInfo, ` where="there"`), 1},
 		{"error", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, match("error", LevelError, ` error="error"`), 1},
 		{"error-missing", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
 			match("error-missing", LevelError, ` where="\(MISSING\)" error="error"`), 1},
-		{"error-with-values", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there") },
+		{"error-with-values", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
 			match("error-with-values", LevelError, ` where="there" error="error"`), 1},
 		{"debug", LevelDebug, func(l telemetry.Logger) { l.Debug("text") }, match("debug", LevelDebug, ""), 0},
 		{"debug-missing", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") }, match("debug-missing", LevelDebug, ` where="\(MISSING\)"`), 0},
-		{"debug-with-values", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there") },
+		{"debug-with-values", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
 			match("debug-with-values", LevelDebug, ` where="there"`), 0},
 	}
 
@@ -71,7 +73,7 @@ func TestLogger(t *testing.T) {
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With("lvl", LevelInfo).With("missing")
+			l := logger.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
 
 			tt.logfunc(l)
 
@@ -120,6 +122,39 @@ func TestSetLevel(t *testing.T) {
 
 	if withvalues.Level() != LevelDebug {
 		t.Fatalf("logger.Level()=%v, want: %v", withvalues.Level(), LevelDebug)
+	}
+}
+
+func BenchmarkStructuredLog0Args(b *testing.B)  { benchmarkLogger(b, 0, newLogger, structuredLog) }
+func BenchmarkStructuredLog3Args(b *testing.B)  { benchmarkLogger(b, 1, newLogger, structuredLog) }
+func BenchmarkStructuredLog9Args(b *testing.B)  { benchmarkLogger(b, 3, newLogger, structuredLog) }
+func BenchmarkStructuredLog15Args(b *testing.B) { benchmarkLogger(b, 5, newLogger, structuredLog) }
+func BenchmarkStructuredLog30Args(b *testing.B) { benchmarkLogger(b, 10, newLogger, structuredLog) }
+
+func benchmarkLogger(
+	b *testing.B,
+	nargs int,
+	factory func(string, string) *Logger,
+	logFunc func(l *Logger, level Level, msg string, err error, keyValues ...interface{}),
+) {
+	var (
+		ctx    = context.Background()
+		logger = factory(fmt.Sprintf("bench%d", nargs), "bench")
+		args   = make([]interface{}, 0, nargs*2)
+	)
+
+	for i := 0; i < nargs; i++ {
+		ctx = telemetry.KeyValuesToContext(ctx, fmt.Sprintf("ctx%d", i), i)
+		logger = logger.With(fmt.Sprintf("with%d", i), i).(*Logger)
+		args = append(args, fmt.Sprintf("arg%d", i), i)
+	}
+
+	logger = logger.Context(ctx).(*Logger)
+	logger.writer = io.Discard
+
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		logFunc(logger, LevelInfo, "bench", nil, args...)
 	}
 }
 

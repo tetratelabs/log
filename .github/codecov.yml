@@ -18,3 +18,5 @@ coverage:
         target: auto
         # allow a potential drop of up to 5%
         threshold: 5%
+        branches:
+          - v2
