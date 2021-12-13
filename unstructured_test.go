@@ -32,16 +32,20 @@ func TestUnstructured(t *testing.T) {
 		logfunc     func(telemetry.Logger)
 		expected    *regexp.Regexp
 		metricCount float64
+		skipContext bool
 	}{
-		{"unstructured-none", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
-		{"unstructured-disabled-info", LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1},
-		{"unstructured-disabled-debug", LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0},
-		{"unstructured-disabled-error", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
-		{"unstructured-info", LevelInfo, func(l telemetry.Logger) { l.Info("hi %s", "there") }, matchUnstructured("unstructured-info", LevelInfo, "hi there"), 1},
+		{"unstructured-none", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-disabled-info", LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-disabled-debug", LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0, false},
+		{"unstructured-disabled-error", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-info", LevelInfo, func(l telemetry.Logger) { l.Info("hi %s", "there") },
+			matchUnstructured("unstructured-info", LevelInfo, "hi there"), 1, false},
 		{"unstructured-error", LevelInfo, func(l telemetry.Logger) { l.Error("text %s: %v", errors.New("error"), "there") },
-			matchUnstructured("unstructured-error", LevelError, "text there: error"), 1},
+			matchUnstructured("unstructured-error", LevelError, "text there: error"), 1, false},
 		{"unstructured-debug", LevelDebug, func(l telemetry.Logger) { l.Debug("hi %s", "there") },
-			matchUnstructured("unstructured-debug", LevelDebug, "hi there"), 0},
+			matchUnstructured("unstructured-debug", LevelDebug, "hi there"), 0, false},
+		{"unstructured-nocontext", LevelInfo, func(l telemetry.Logger) { l.Info("hi %s", "there") },
+			matchUnstructuredNoCtx("unstructured-nocontext", LevelInfo, "hi there"), 1, true},
 	}
 
 	for _, tt := range tests {
@@ -63,8 +67,12 @@ func TestUnstructured(t *testing.T) {
 			logger.writer = &out
 
 			metric := mockMetric{}
-			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
+			if !tt.skipContext {
+				ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
+				logger = logger.Context(ctx).(*Logger)
+			}
+
+			l := logger.Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
 
 			tt.logfunc(l)
 
@@ -101,4 +109,8 @@ func BenchmarkUnstructuredLog30Args(b *testing.B) {
 
 func matchUnstructured(n string, l Level, msg string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%-10s\\t%s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, n, msg))
+}
+
+func matchUnstructuredNoCtx(n string, l Level, msg string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%-10s\\t%s \\[lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, n, msg))
 }
