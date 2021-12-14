@@ -28,7 +28,7 @@ func mockTime() time.Time {
 
 func ExampleLogger() {
 	logger := Register("mylogger", "Custom logger")
-	logger.now = mockTime // Mock time to have a consistent output
+	logger.(*Logger).now = mockTime // Mock time to have a consistent output
 
 	// Normal and error logging
 	logger.Info("an info message with values", "key", "value")
@@ -36,7 +36,7 @@ func ExampleLogger() {
 
 	// Changing log levels at runtime
 	logger.Debug("a debug message")
-	logger.SetLevel(LevelDebug)
+	logger.(*Logger).SetLevel(LevelDebug)
 	logger.Debug("an enabled debug message")
 
 	// Propagating values
@@ -52,7 +52,7 @@ func ExampleLogger() {
 
 func ExampleLogger_unstructured() {
 	unstructured := RegisterUnstructured("unstructured-example", "Unstructured logger")
-	unstructured.now = mockTime // Mock time to have a consistent output
+	unstructured.(*Logger).now = mockTime // Mock time to have a consistent output
 
 	// Normal and error logging
 	unstructured.Info("an info message with %s", "a value")
@@ -60,7 +60,7 @@ func ExampleLogger_unstructured() {
 
 	// Changing log levels at runtime
 	unstructured.Debug("a debug message")
-	unstructured.SetLevel(LevelDebug)
+	unstructured.(*Logger).SetLevel(LevelDebug)
 	unstructured.Debug("an enabled debug message")
 
 	// Propagating values

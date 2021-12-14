@@ -50,7 +50,7 @@ func TestUnstructured(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := RegisterUnstructured(tt.name, "test logger")
+			logger := RegisterUnstructured(tt.name, "test logger").(*Logger)
 			logger.SetLevel(tt.level)
 			if logger.Name() != tt.name {
 				t.Fatalf("loger.Name()=%s, want: %s", logger.Name(), tt.name)
