@@ -56,6 +56,7 @@ func RegisterUnstructured(name, description string) ScopedLogger {
 func Loggers() []ScopedLogger { return reg.Loggers() }
 
 // GetLogger gets a registered logger by name.
+// If no logger has been registered with the name, a Discard logger will be returned.
 func GetLogger(name string) ScopedLogger {
 	logger, _ := reg.GetLogger(name)
 	return logger
@@ -84,6 +85,7 @@ func (r *registry) Loggers() []ScopedLogger {
 }
 
 // GetLogger a registered logger by name.
+// If no logger has been registered with the name, a Discard logger will be returned.
 func (r *registry) GetLogger(name string) (ScopedLogger, bool) {
 	r.mu.RLock()
 	logger, ok := r.loggers[name]
