@@ -69,7 +69,7 @@ func TestLogger(t *testing.T) {
 
 			// Overwrite the output of the loggers to check the output messages
 			var out bytes.Buffer
-			logger.writer = &out
+			logger = logger.Writer(&out)
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
@@ -149,8 +149,7 @@ func benchmarkLogger(
 		args = append(args, fmt.Sprintf("arg%d", i), i)
 	}
 
-	logger = logger.Context(ctx).(*Logger)
-	logger.writer = io.Discard
+	logger = logger.Context(ctx).(*Logger).Writer(io.Discard)
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

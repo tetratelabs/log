@@ -162,6 +162,14 @@ func (l *Logger) Metric(m telemetry.Metric) telemetry.Logger {
 	return newLogger
 }
 
+// Writer configures the writer where all log messages will be emitted.
+// This is mostly used in unit tests to allow sending logs to a buffer.
+func (l *Logger) Writer(w io.Writer) *Logger {
+	newLogger := l.clone()
+	newLogger.writer = w
+	return newLogger
+}
+
 // clone the current logger and return it
 func (l *Logger) clone() *Logger {
 	newLogger := &Logger{
