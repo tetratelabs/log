@@ -27,32 +27,32 @@ func mockTime() time.Time {
 }
 
 func ExampleLogger() {
-	logger := Register("mylogger", "Custom logger")
-	logger.(*Logger).now = mockTime // Mock time to have a consistent output
+	log := New()
+	log.(*logger).now = mockTime // Mock time to have a consistent output
 
 	// Normal and error logging
-	logger.Info("an info message with values", "key", "value")
-	logger.Error("validation error", errors.New("validation failed"), "arg1", "invalid-value")
+	log.Info("an info message with values", "key", "value")
+	log.Error("validation error", errors.New("validation failed"), "arg1", "invalid-value")
 
 	// Changing log levels at runtime
-	logger.Debug("a debug message")
-	logger.(*Logger).SetLevel(LevelDebug)
-	logger.Debug("an enabled debug message")
+	log.Debug("a debug message")
+	log.SetLevel(telemetry.LevelDebug)
+	log.Debug("an enabled debug message")
 
 	// Propagating values
 	ctx := telemetry.KeyValuesToContext(context.Background(), "request-id", 123)
-	logger.Context(ctx).With("component", "middleware").Info("enriched message")
+	log.Context(ctx).With("component", "middleware").Info("enriched message")
 
 	// Output:
-	// time="2021/12/09 17:37:46" level=info scope="mylogger" msg="an info message with values" key="value"
-	// time="2021/12/09 17:37:46" level=error scope="mylogger" msg="validation error" arg1="invalid-value" error="validation failed"
-	// time="2021/12/09 17:37:46" level=debug scope="mylogger" msg="an enabled debug message"
-	// time="2021/12/09 17:37:46" level=info scope="mylogger" msg="enriched message" request-id=123 component="middleware"
+	// time="2021/12/09 17:37:46" level=info msg="an info message with values" key="value"
+	// time="2021/12/09 17:37:46" level=error msg="validation error" arg1="invalid-value" error="validation failed"
+	// time="2021/12/09 17:37:46" level=debug msg="an enabled debug message"
+	// time="2021/12/09 17:37:46" level=info msg="enriched message" request-id=123 component="middleware"
 }
 
 func ExampleLogger_unstructured() {
-	unstructured := RegisterUnstructured("unstructured-example", "Unstructured logger")
-	unstructured.(*Logger).now = mockTime // Mock time to have a consistent output
+	unstructured := NewUnstructured()
+	unstructured.(*logger).now = mockTime // Mock time to have a consistent output
 
 	// Normal and error logging
 	unstructured.Info("an info message with %s", "a value")
@@ -60,7 +60,7 @@ func ExampleLogger_unstructured() {
 
 	// Changing log levels at runtime
 	unstructured.Debug("a debug message")
-	unstructured.(*Logger).SetLevel(LevelDebug)
+	unstructured.SetLevel(telemetry.LevelDebug)
 	unstructured.Debug("an enabled debug message")
 
 	// Propagating values
@@ -68,8 +68,8 @@ func ExampleLogger_unstructured() {
 	unstructured.Context(ctx).With("component", "middleware").Info("enriched message")
 
 	// Output:
-	// 2021/12/09 17:37:46  info 	unstructured-example	an info message with a value
-	// 2021/12/09 17:37:46  error	unstructured-example	validation error in arg1: validation failed
-	// 2021/12/09 17:37:46  debug	unstructured-example	an enabled debug message
-	// 2021/12/09 17:37:46  info 	unstructured-example	enriched message [request-id=123 component="middleware"]
+	// 2021/12/09 17:37:46  info 	an info message with a value
+	// 2021/12/09 17:37:46  error	validation error in arg1: validation failed
+	// 2021/12/09 17:37:46  debug	an enabled debug message
+	// 2021/12/09 17:37:46  info 	enriched message [request-id=123 component="middleware"]
 }

@@ -15,7 +15,7 @@
 MODULE_PATH ?= $(shell sed -ne 's/^module //gp' go.mod)
 
 # Tools
-LINTER    := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.41.1
+LINTER    := github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
 LICENSER  := github.com/liamawhite/licenser@v0.6.1-0.20210729145742-be6c77bf6a1f
 GOIMPORTS := golang.org/x/tools/cmd/goimports@v0.1.5
 
@@ -44,13 +44,14 @@ LINT_OPTS ?= --timeout 5m
 lint:
 	go run $(LINTER) run $(LINT_OPTS) --config .golangci.yml
 
+GO_SOURCES = $(shell git ls-files | grep '.go$$')
 .PHONY: format
 format:
-	@for f in `git ls-files | grep '.go$$'`; do \
+	@for f in $(GO_SOURCES); do \
 	    awk '/^import \($$/,/^\)$$/{if($$0=="")next}{print}' "$$f" > /tmp/fmt; \
 	    mv /tmp/fmt "$$f"; \
 	done
-	go run $(GOIMPORTS) -w -local $(MODULE_PATH) .
+	go run $(GOIMPORTS) -w -local $(MODULE_PATH) $(GO_SOURCES)
 	go run $(LICENSER) apply -r "Tetrate"
 
 .PHONY: check

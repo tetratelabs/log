@@ -13,22 +13,25 @@
 # limitations under the License.
 linters:
   enable:
+    - contextcheck
     - deadcode
     - errcheck
+    - errname
     - goconst
-    - revive
+    - gosimple
+    - govet
     - ineffassign
     - lll
-    - misspell
-    - structcheck
-    - unconvert
-    - varcheck
-    - govet
-    - prealloc
-    - unused
-    - staticcheck
-    - gosimple
     - megacheck
+    - misspell
+    - prealloc
+    - revive
+    - staticcheck
+    - structcheck
+    - tenv
+    - unconvert
+    - unused
+    - varcheck
   disable:
     - interfacer # deprecated since it "is prone to bad suggestions"
     - goimports # already run in `make format`
