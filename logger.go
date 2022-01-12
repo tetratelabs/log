@@ -74,10 +74,6 @@ func (l *logger) structuredLog(level telemetry.Level, msg string, err error, val
 
 	writeArgs(&out, values.FromContext)
 	writeArgs(&out, values.FromLogger)
-
-	if len(values.FromMethod)%2 != 0 {
-		values.FromMethod = append(values.FromMethod, "(MISSING)")
-	}
 	writeArgs(&out, values.FromMethod)
 
 	if err != nil {
