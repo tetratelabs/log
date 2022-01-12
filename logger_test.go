@@ -24,56 +24,52 @@ import (
 	"testing"
 
 	"github.com/tetratelabs/telemetry"
+	"github.com/tetratelabs/telemetry/function"
 )
 
 func TestLogger(t *testing.T) {
 	tests := []struct {
 		name        string
-		level       Level
+		level       telemetry.Level
 		logfunc     func(telemetry.Logger)
 		expected    *regexp.Regexp
 		metricCount float64
 	}{
-		{"none", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
-		{"disabled-info", LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1},
-		{"disabled-debug", LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0},
-		{"disabled-error", LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
-		{"info", LevelInfo, func(l telemetry.Logger) { l.Info("text") }, match("info", LevelInfo, ""), 1},
-		{"info-missing", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") }, match("info-missing", LevelInfo, ` where="\(MISSING\)"`), 1},
-		{"info-with-values", LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
-			match("info-with-values", LevelInfo, ` where="there"`), 1},
-		{"error", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, match("error", LevelError, ` error="error"`), 1},
-		{"error-missing", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
-			match("error-missing", LevelError, ` where="\(MISSING\)" error="error"`), 1},
-		{"error-with-values", LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
-			match("error-with-values", LevelError, ` where="there" error="error"`), 1},
-		{"debug", LevelDebug, func(l telemetry.Logger) { l.Debug("text") }, match("debug", LevelDebug, ""), 0},
-		{"debug-missing", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") }, match("debug-missing", LevelDebug, ` where="\(MISSING\)"`), 0},
-		{"debug-with-values", LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
-			match("debug-with-values", LevelDebug, ` where="there"`), 0},
+		{"none", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
+		{"disabled-info", telemetry.LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1},
+		{"disabled-debug", telemetry.LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0},
+		{"disabled-error", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
+		{"info", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text") }, match(telemetry.LevelInfo, ""), 1},
+		{"info-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") }, match(telemetry.LevelInfo, ` where="\(MISSING\)"`), 1},
+		{"info-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
+			match(telemetry.LevelInfo, ` where="there"`), 1},
+		{"error", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, match(telemetry.LevelError, ` error="error"`), 1},
+		{"error-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
+			match(telemetry.LevelError, ` where="\(MISSING\)" error="error"`), 1},
+		{"error-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
+			match(telemetry.LevelError, ` where="there" error="error"`), 1},
+		{"debug", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text") }, match(telemetry.LevelDebug, ""), 0},
+		{"debug-missing", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") }, match(telemetry.LevelDebug, ` where="\(MISSING\)"`), 0},
+		{"debug-with-values", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
+			match(telemetry.LevelDebug, ` where="there"`), 0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := Register(tt.name, "test logger").(*Logger)
-			logger.SetLevel(tt.level)
-			if logger.Name() != tt.name {
-				t.Fatalf("loger.Name()=%s, want: %s", logger.Name(), tt.name)
-			}
-			if logger.Description() != "test logger" {
-				t.Fatalf(`loger.Description()=%s, want: "test logger""`, logger.Description())
-			}
-			if logger.Level() != tt.level {
-				t.Fatalf("loger.Level()=%s, want: %s", logger.Level(), tt.level)
+			l := New()
+
+			l.SetLevel(tt.level)
+			if l.Level() != tt.level {
+				t.Fatalf("loger.Level()=%s, want: %s", l.Level(), tt.level)
 			}
 
 			// Overwrite the output of the loggers to check the output messages
 			var out bytes.Buffer
-			logger.writer = &out
+			l.(*logger).writer = &out
 
 			metric := mockMetric{}
 			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
-			l := logger.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", LevelInfo).With("missing")
+			l = l.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", telemetry.LevelInfo).With("missing")
 
 			tt.logfunc(l)
 
@@ -88,73 +84,135 @@ func TestLogger(t *testing.T) {
 	}
 }
 
-func TestAsLevel(t *testing.T) {
+func TestUnstructured(t *testing.T) {
 	tests := []struct {
-		level string
-		want  Level
-		ok    bool
+		name        string
+		level       telemetry.Level
+		logfunc     func(telemetry.Logger)
+		expected    *regexp.Regexp
+		metricCount float64
+		skipContext bool
 	}{
-		{"none", LevelNone, true},
-		{"error", LevelError, true},
-		{"info", LevelInfo, true},
-		{"debug", LevelDebug, true},
-		{"invalid", LevelNone, false},
+		{"unstructured-none", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-disabled-info", telemetry.LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-disabled-debug", telemetry.LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0, false},
+		{"unstructured-disabled-error", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1, false},
+		{"unstructured-info", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("hi %s", "there") },
+			matchUnstructured(telemetry.LevelInfo, "hi there"), 1, false},
+		{"unstructured-error", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text %s: %v", errors.New("error"), "there") },
+			matchUnstructured(telemetry.LevelError, "text there: error"), 1, false},
+		{"unstructured-debug", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("hi %s", "there") },
+			matchUnstructured(telemetry.LevelDebug, "hi there"), 0, false},
+		{"unstructured-nocontext", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("hi %s", "there") },
+			matchUnstructuredNoCtx(telemetry.LevelInfo, "hi there"), 1, true},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.level, func(t *testing.T) {
-			level, ok := AsLevel(tt.level)
+		t.Run(tt.name, func(t *testing.T) {
+			l := NewUnstructured()
 
-			if level != tt.want {
-				t.Fatalf("AsLevel(%s)=%s, want: %s", tt.level, level, tt.want)
+			l.SetLevel(tt.level)
+			if l.Level() != tt.level {
+				t.Fatalf("loger.Level()=%s, want: %s", l.Level(), tt.level)
 			}
-			if ok != tt.ok {
-				t.Fatalf("AsLevel(%s)=%t, want: %t", tt.level, ok, tt.ok)
+
+			// Overwrite the output of the loggers to check the output messages
+			var out bytes.Buffer
+			l.(*logger).writer = &out
+
+			metric := mockMetric{}
+			if !tt.skipContext {
+				ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
+				l = l.Context(ctx)
+			}
+
+			l = l.Metric(&metric).With().With(1, "").With("lvl", telemetry.LevelInfo).With("missing")
+
+			tt.logfunc(l)
+
+			str := out.String()
+			if !tt.expected.MatchString(str) {
+				t.Fatalf("expected %v to match %s", str, tt.expected)
+			}
+			if metric.count != tt.metricCount {
+				t.Fatalf("metric.count=%v, want %v", metric.count, tt.metricCount)
 			}
 		})
 	}
 }
 
-func TestSetLevel(t *testing.T) {
-	logger := Register("level", "test logger").(*Logger)
-	withvalues := logger.With("key", "value").(*Logger)
-	logger.SetLevel(LevelDebug)
-
-	if withvalues.Level() != LevelDebug {
-		t.Fatalf("logger.Level()=%v, want: %v", withvalues.Level(), LevelDebug)
-	}
+func BenchmarkStructuredLog0Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 0, l, l.structuredLog)
 }
 
-func BenchmarkStructuredLog0Args(b *testing.B)  { benchmarkLogger(b, 0, newLogger, structuredLog) }
-func BenchmarkStructuredLog3Args(b *testing.B)  { benchmarkLogger(b, 1, newLogger, structuredLog) }
-func BenchmarkStructuredLog9Args(b *testing.B)  { benchmarkLogger(b, 3, newLogger, structuredLog) }
-func BenchmarkStructuredLog15Args(b *testing.B) { benchmarkLogger(b, 5, newLogger, structuredLog) }
-func BenchmarkStructuredLog30Args(b *testing.B) { benchmarkLogger(b, 10, newLogger, structuredLog) }
+func BenchmarkStructuredLog3Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 1, l, l.structuredLog)
+}
 
-func benchmarkLogger(
-	b *testing.B,
-	nargs int,
-	factory func(string, string) *Logger,
-	logFunc func(l *Logger, level Level, msg string, err error, keyValues ...interface{}),
-) {
+func BenchmarkStructuredLog9Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 3, l, l.structuredLog)
+}
+
+func BenchmarkStructuredLog15Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 5, l, l.structuredLog)
+}
+
+func BenchmarkStructuredLog30Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 10, l, l.structuredLog)
+}
+
+func BenchmarkUnstructuredLog0Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 0, l, l.unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog3Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 1, l, l.unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog9Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 3, l, l.unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog15Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 5, l, l.unstructuredLog)
+}
+
+func BenchmarkUnstructuredLog30Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 10, l, l.unstructuredLog)
+}
+
+func benchmarkLogger(b *testing.B, nargs int, l *logger, logFunc function.Emit) {
 	var (
 		ctx    = context.Background()
-		logger = factory(fmt.Sprintf("bench%d", nargs), "bench")
 		args   = make([]interface{}, 0, nargs*2)
+		method = make([]interface{}, 0, nargs*2)
 	)
+
+	l.writer = io.Discard
 
 	for i := 0; i < nargs; i++ {
 		ctx = telemetry.KeyValuesToContext(ctx, fmt.Sprintf("ctx%d", i), i)
-		logger = logger.With(fmt.Sprintf("with%d", i), i).(*Logger)
-		args = append(args, fmt.Sprintf("arg%d", i), i)
+		args = append(args, fmt.Sprintf("with%d", i), i)
+		method = append(method, fmt.Sprintf("arg%d", i), i)
 	}
-
-	logger = logger.Context(ctx).(*Logger)
-	logger.writer = io.Discard
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		logFunc(logger, LevelInfo, "bench", nil, args...)
+		logFunc(telemetry.LevelInfo, "bench", nil, function.Values{
+			FromContext: telemetry.KeyValuesFromContext(ctx),
+			FromLogger:  args,
+			FromMethod:  method,
+		})
 	}
 }
 
@@ -164,10 +222,16 @@ const (
 	rprefix = rdate + " " + rtime          // log prefix match
 )
 
-func match(n string, l Level, keyvalues string) *regexp.Regexp {
-	return regexp.MustCompile(
-		fmt.Sprintf("^time=%q level=%s scope=%q msg=\"text\" ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"%s\\n$",
-			rprefix, l, n, keyvalues))
+func match(l telemetry.Level, keyvalues string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf("^time=%q level=%s msg=\"text\" ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"%s\\n$", rprefix, l, keyvalues))
+}
+
+func matchUnstructured(l telemetry.Level, msg string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
+}
+
+func matchUnstructuredNoCtx(l telemetry.Level, msg string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%s \\[lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
 }
 
 type mockMetric struct {
