@@ -227,11 +227,11 @@ func match(l telemetry.Level, keyvalues string) *regexp.Regexp {
 }
 
 func matchUnstructured(l telemetry.Level, msg string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v  %s \\[ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
 }
 
 func matchUnstructuredNoCtx(l telemetry.Level, msg string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v\t%s \\[lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v  %s \\[lvl=info missing=\"\\(MISSING\\)\"\\]\\n$", rprefix, l, msg))
 }
 
 type mockMetric struct {

@@ -93,7 +93,7 @@ func (l *logger) unstructuredLog(level telemetry.Level, msg string, err error, v
 		out bytes.Buffer
 	)
 
-	_, _ = out.WriteString(fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d  %-5v\t",
+	_, _ = out.WriteString(fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d  %-5v  ",
 		t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(), level))
 
 	if err != nil {
