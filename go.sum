@@ -1,2 +1,4 @@
 github.com/tetratelabs/telemetry v0.7.2-0.20220212085446-55f981e80e16 h1:5tF7iwQ5AAX78wOXturkdrfdKECkLNPI5heLY+jdFnw=
 github.com/tetratelabs/telemetry v0.7.2-0.20220212085446-55f981e80e16/go.mod h1:jDUcf1A2u4F5V1io5RdipM/bKz/hFCsx/RAgGopC37s=
+github.com/tetratelabs/telemetry v0.7.2-0.20220313224708-4346665bc916 h1:EcoEvmupZR3pQz00HZ8GaJGFV4fKQVH5c0f8ItpS3AQ=
+github.com/tetratelabs/telemetry v0.7.2-0.20220313224708-4346665bc916/go.mod h1:jDUcf1A2u4F5V1io5RdipM/bKz/hFCsx/RAgGopC37s=
