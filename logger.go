@@ -50,7 +50,26 @@ func New() telemetry.Logger {
 	return lg
 }
 
+// NewFlattened creates a new flattened logger for structured data.
+func NewFlattened() telemetry.Logger {
+	lg := &logger{
+		writer: os.Stdout,
+		now:    time.Now,
+	}
+	lg.Logger = function.NewLogger(lg.flattenedLog)
+	return lg
+}
+
 // NewUnstructured creates a new unstructured logger.
+// NOTE: This logger is not to be used for new development as it goes against
+// the contract of the telemetry.Logger interface. It expects Printf style data
+// from calls to Error, Info, and Debug. It has been added for converting legacy
+// code to use this new logging subsystem.
+//
+//	Example: log.Debug("values should be between %d and %d.", 12, 24)
+//
+// If you want to have a normal style log output but provide proper structured
+// data, please use the flattened logger by instantiating NewFlattened().
 func NewUnstructured() telemetry.Logger {
 	lg := &logger{
 		writer: os.Stdout,
@@ -155,4 +174,30 @@ func writeKeyValue(b *bytes.Buffer, args []interface{}, i, n int) {
 	} else {
 		_, _ = b.WriteString(fmt.Sprintf("%v", args[i+1]))
 	}
+}
+
+// flattenedLog emits the structured log as a flattened log at the given level
+func (l *logger) flattenedLog(level telemetry.Level, msg string, err error, values function.Values) {
+	var (
+		t   = l.now()
+		out bytes.Buffer
+	)
+
+	_, _ = out.WriteString(fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d  %-5v  %s",
+		t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(), level, msg))
+
+	if err != nil || len(values.FromContext) > 0 || len(values.FromLogger) > 0 || len(values.FromMethod) > 0 {
+		if err != nil {
+			_, _ = out.WriteString(fmt.Sprintf(" [error=%q", err.Error()))
+		} else {
+			_, _ = out.WriteString(" [")
+		}
+		writeArgs(&out, values.FromContext)
+		writeArgs(&out, values.FromLogger)
+		writeArgs(&out, values.FromMethod)
+		_, _ = out.WriteString("]")
+	}
+
+	_, _ = out.WriteString("\n")
+	_, _ = out.WriteTo(l.writer)
 }
