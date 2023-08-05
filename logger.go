@@ -186,15 +186,42 @@ func (l *logger) flattenedLog(level telemetry.Level, msg string, err error, valu
 	_, _ = out.WriteString(fmt.Sprintf("%d/%02d/%02d %02d:%02d:%02d  %-5v  %s",
 		t.Year(), int(t.Month()), t.Day(), t.Hour(), t.Minute(), t.Second(), level, msg))
 
-	if err != nil || len(values.FromContext) > 0 || len(values.FromLogger) > 0 || len(values.FromMethod) > 0 {
+	nCtx := len(values.FromContext)
+	nWith := len(values.FromLogger)
+	nMeth := len(values.FromMethod)
+
+	if err != nil || nCtx > 0 || nWith > 0 || nMeth > 0 {
 		if err != nil {
 			_, _ = out.WriteString(fmt.Sprintf(" [error=%q", err.Error()))
+			if nCtx > 0 || nWith > 0 || nMeth > 0 {
+				_, _ = out.WriteString(" ")
+			}
 		} else {
 			_, _ = out.WriteString(" [")
 		}
-		writeArgs(&out, values.FromContext)
-		writeArgs(&out, values.FromLogger)
-		writeArgs(&out, values.FromMethod)
+		if nCtx > 0 {
+			writeKeyValue(&out, values.FromContext, 0, nCtx)
+			writeArgs(&out, values.FromContext[2:])
+			if nWith > 0 || nMeth > 0 {
+				_, _ = out.WriteString(" ")
+			}
+		}
+		if nWith > 0 {
+			writeKeyValue(&out, values.FromLogger, 0, nWith)
+			writeArgs(&out, values.FromLogger[2:])
+			if nMeth > 0 {
+				_, _ = out.WriteString(" ")
+			}
+		}
+		if nMeth > 0 {
+			writeKeyValue(&out, values.FromMethod, 0, nMeth)
+			// it is possible for values.FromMethod to have an odd number
+			// of items since telemetry/function.Logger was created to support
+			// unstructured data. This means that nMeth might be 1.
+			if nMeth > 1 {
+				writeArgs(&out, values.FromMethod[2:])
+			}
+		}
 		_, _ = out.WriteString("]")
 	}
 
