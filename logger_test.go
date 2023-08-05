@@ -101,19 +101,19 @@ func TestFlattened(t *testing.T) {
 		{"info-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") },
 			matchFlattened(telemetry.LevelInfo, `text`, `where="\(MISSING\)"`, ``), 1},
 		{"info-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
-			matchFlattened(telemetry.LevelInfo, `text`, `where="there"`, ``), 1},
+			matchFlattened(telemetry.LevelInfo, `text`, `where="there" 1="1"`, ``), 1},
 		{"error", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) },
 			matchFlattened(telemetry.LevelError, `text`, ``, `error`), 1},
 		{"error-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
 			matchFlattened(telemetry.LevelError, `text`, `where="\(MISSING\)"`, `error`), 1},
 		{"error-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
-			matchFlattened(telemetry.LevelError, `text`, `where="there"`, `error`), 1},
+			matchFlattened(telemetry.LevelError, `text`, `where="there" 1="1"`, `error`), 1},
 		{"debug", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text") },
 			matchFlattened(telemetry.LevelDebug, `text`, ``, ``), 0},
 		{"debug-missing", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") },
 			matchFlattened(telemetry.LevelDebug, `text`, `where="\(MISSING\)"`, ``), 0},
 		{"debug-with-values", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
-			matchFlattened(telemetry.LevelDebug, `text`, `where="there"`, ``), 0},
+			matchFlattened(telemetry.LevelDebug, `text`, `where="there" 1="1"`, ``), 0},
 	}
 
 	for _, tt := range tests {
@@ -251,6 +251,31 @@ func BenchmarkUnstructuredLog15Args(b *testing.B) {
 func BenchmarkUnstructuredLog30Args(b *testing.B) {
 	l := New().(*logger)
 	benchmarkLogger(b, 10, l, l.unstructuredLog)
+}
+
+func BenchmarkFlattenedLog0Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 0, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog3Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 1, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog9Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 3, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog15Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 5, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog30Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 10, l, l.flattenedLog)
 }
 
 func benchmarkLogger(b *testing.B, nargs int, l *logger, logFunc function.Emit) {

@@ -199,32 +199,42 @@ func (l *logger) flattenedLog(level telemetry.Level, msg string, err error, valu
 		} else {
 			_, _ = out.WriteString(" [")
 		}
-		if nCtx > 0 {
-			writeKeyValue(&out, values.FromContext, 0, nCtx)
-			writeArgs(&out, values.FromContext[2:])
-			if nWith > 0 || nMeth > 0 {
-				_, _ = out.WriteString(" ")
-			}
-		}
-		if nWith > 0 {
-			writeKeyValue(&out, values.FromLogger, 0, nWith)
-			writeArgs(&out, values.FromLogger[2:])
-			if nMeth > 0 {
-				_, _ = out.WriteString(" ")
-			}
-		}
-		if nMeth > 0 {
-			writeKeyValue(&out, values.FromMethod, 0, nMeth)
-			// it is possible for values.FromMethod to have an odd number
-			// of items since telemetry/function.Logger was created to support
-			// unstructured data. This means that nMeth might be 1.
-			if nMeth > 1 {
-				writeArgs(&out, values.FromMethod[2:])
-			}
-		}
+
+		writeArgs2(&out, values.FromContext, values.FromLogger, values.FromMethod)
+
 		_, _ = out.WriteString("]")
+
 	}
 
 	_, _ = out.WriteString("\n")
 	_, _ = out.WriteTo(l.writer)
+}
+
+// writeArgs2 writes the collection of argument lists to the buffer.
+func writeArgs2(b *bytes.Buffer, args ...[]interface{}) {
+	t := len(args)
+	firstValue := true
+	for i := 0; i < t; i++ {
+		n := len(args[i])
+		if n%2 == 1 {
+			args[i] = append(args[i], "(MISSING)")
+			n++
+		}
+		for j := 0; j < n; j += 2 {
+			if !firstValue {
+				_, _ = b.WriteString(" ")
+			}
+			firstValue = false
+			if k, ok := args[i][j].(string); ok {
+				_, _ = b.WriteString(k + "=")
+			} else {
+				_, _ = b.WriteString(fmt.Sprintf("%v=", args[i][j]))
+			}
+			if v, ok := args[i][j+1].(string); ok {
+				_, _ = b.WriteString(fmt.Sprintf("%q", v))
+			} else {
+				_, _ = b.WriteString(fmt.Sprintf("%v", args[i][j+1]))
+			}
+		}
+	}
 }
