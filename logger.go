@@ -212,9 +212,8 @@ func (l *logger) flattenedLog(level telemetry.Level, msg string, err error, valu
 
 // writeArgs2 writes the collection of argument lists to the buffer.
 func writeArgs2(b *bytes.Buffer, args ...[]interface{}) {
-	t := len(args)
 	firstValue := true
-	for i := 0; i < t; i++ {
+	for i := 0; i < len(args); i++ {
 		n := len(args[i])
 		if n%2 == 1 {
 			args[i] = append(args[i], "(MISSING)")

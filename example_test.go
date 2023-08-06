@@ -73,3 +73,27 @@ func ExampleLogger_unstructured() {
 	// 2021/12/09 17:37:46  debug  an enabled debug message
 	// 2021/12/09 17:37:46  info   enriched message [request-id=123 component="middleware"]
 }
+
+func ExampleLogger_flattened() {
+	flattened := NewFlattened()
+	flattened.(*logger).now = mockTime // Mock time to have a consistent output
+
+	// Normal and error logging
+	flattened.Info("an info message with metadata", "some_key", "a value")
+	flattened.Error("unable to process", errors.New("argument validation failed"), "argument", "arg1")
+
+	// Changing log levels at runtime
+	flattened.Debug("a debug message")
+	flattened.SetLevel(telemetry.LevelDebug)
+	flattened.Debug("an enabled debug message")
+
+	// Propagating values
+	ctx := telemetry.KeyValuesToContext(context.Background(), "request-id", 123)
+	flattened.Context(ctx).With("component", "middleware").Info("enriched message", "foo", "bar")
+
+	// Output:
+	// 2021/12/09 17:37:46  info   an info message with metadata [some_key="a value"]
+	// 2021/12/09 17:37:46  error  unable to process [error="argument validation failed" argument="arg1"]
+	// 2021/12/09 17:37:46  debug  an enabled debug message
+	// 2021/12/09 17:37:46  info   enriched message [request-id=123 component="middleware" foo="bar"]
+}
