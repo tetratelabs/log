@@ -84,6 +84,68 @@ func TestLogger(t *testing.T) {
 	}
 }
 
+func TestFlattened(t *testing.T) {
+	tests := []struct {
+		name        string
+		level       telemetry.Level
+		logfunc     func(telemetry.Logger)
+		expected    *regexp.Regexp
+		metricCount float64
+	}{
+		{"none", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
+		{"disabled-info", telemetry.LevelNone, func(l telemetry.Logger) { l.Info("text") }, regexp.MustCompile("^$"), 1},
+		{"disabled-debug", telemetry.LevelNone, func(l telemetry.Logger) { l.Debug("text") }, regexp.MustCompile("^$"), 0},
+		{"disabled-error", telemetry.LevelNone, func(l telemetry.Logger) { l.Error("text", errors.New("error")) }, regexp.MustCompile("^$"), 1},
+		{"info", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text") },
+			matchFlattened(telemetry.LevelInfo, `text`, ``, ``), 1},
+		{"info-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where") },
+			matchFlattened(telemetry.LevelInfo, `text`, `where="\(MISSING\)"`, ``), 1},
+		{"info-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Info("text", "where", "there", 1, "1") },
+			matchFlattened(telemetry.LevelInfo, `text`, `where="there" 1="1"`, ``), 1},
+		{"error", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error")) },
+			matchFlattened(telemetry.LevelError, `text`, ``, `error`), 1},
+		{"error-missing", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where") },
+			matchFlattened(telemetry.LevelError, `text`, `where="\(MISSING\)"`, `error`), 1},
+		{"error-with-values", telemetry.LevelInfo, func(l telemetry.Logger) { l.Error("text", errors.New("error"), "where", "there", 1, "1") },
+			matchFlattened(telemetry.LevelError, `text`, `where="there" 1="1"`, `error`), 1},
+		{"debug", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text") },
+			matchFlattened(telemetry.LevelDebug, `text`, ``, ``), 0},
+		{"debug-missing", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where") },
+			matchFlattened(telemetry.LevelDebug, `text`, `where="\(MISSING\)"`, ``), 0},
+		{"debug-with-values", telemetry.LevelDebug, func(l telemetry.Logger) { l.Debug("text", "where", "there", 1, "1") },
+			matchFlattened(telemetry.LevelDebug, `text`, `where="there" 1="1"`, ``), 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := NewFlattened()
+
+			l.SetLevel(tt.level)
+			if l.Level() != tt.level {
+				t.Fatalf("loger.Level()=%s, want: %s", l.Level(), tt.level)
+			}
+
+			// Overwrite the output of the loggers to check the output messages
+			var out bytes.Buffer
+			l.(*logger).writer = &out
+
+			metric := mockMetric{}
+			ctx := telemetry.KeyValuesToContext(context.Background(), "ctx", "value")
+			l = l.Context(ctx).Metric(&metric).With().With(1, "").With("lvl", telemetry.LevelInfo).With("missing")
+
+			tt.logfunc(l)
+
+			str := out.String()
+			if !tt.expected.MatchString(str) {
+				t.Fatalf("expected %v to match %s", str, tt.expected)
+			}
+			if metric.count != tt.metricCount {
+				t.Fatalf("metric.count=%v, want %v", metric.count, tt.metricCount)
+			}
+		})
+	}
+}
+
 func TestUnstructured(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -191,6 +253,31 @@ func BenchmarkUnstructuredLog30Args(b *testing.B) {
 	benchmarkLogger(b, 10, l, l.unstructuredLog)
 }
 
+func BenchmarkFlattenedLog0Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 0, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog3Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 1, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog9Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 3, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog15Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 5, l, l.flattenedLog)
+}
+
+func BenchmarkFlattenedLog30Args(b *testing.B) {
+	l := New().(*logger)
+	benchmarkLogger(b, 10, l, l.flattenedLog)
+}
+
 func benchmarkLogger(b *testing.B, nargs int, l *logger, logFunc function.Emit) {
 	var (
 		ctx    = context.Background()
@@ -224,6 +311,16 @@ const (
 
 func match(l telemetry.Level, keyvalues string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf("^time=%q level=%s msg=\"text\" ctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"%s\\n$", rprefix, l, keyvalues))
+}
+
+func matchFlattened(l telemetry.Level, msg string, keys string, err string) *regexp.Regexp {
+	if keys != "" {
+		keys = " " + keys
+	}
+	if err != "" {
+		err = fmt.Sprintf("error=%q ", err)
+	}
+	return regexp.MustCompile(fmt.Sprintf("^%s  %-5v  %s \\[%sctx=\"value\" lvl=info missing=\"\\(MISSING\\)\"%s\\]\\n$", rprefix, l, msg, err, keys))
 }
 
 func matchUnstructured(l telemetry.Level, msg string) *regexp.Regexp {
